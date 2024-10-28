@@ -9,7 +9,7 @@ from tests.utils.login import _create_user_and_login
 async def test_create_user(client: AsyncClient) -> None:
     """Test user creation."""
     fake_user = create_fake_user()
-    response = await client.post("/api/v1/users/", json=fake_user)
+    response = await client.post("/api/v1/auth/register-user", json=fake_user)
     assert response.status_code == 201
     assert response.json()["data"]["email"] == fake_user["email"]
 
@@ -19,9 +19,9 @@ async def test_create_user_with_existing_email(client: AsyncClient) -> None:
     """Test user creation with existing email."""
     fake_user = create_fake_user()
 
-    await client.post("/api/v1/users/", json=fake_user)
+    await client.post("/api/v1/auth/register-user", json=fake_user)
 
-    response = await client.post("/api/v1/users/", json=fake_user)
+    response = await client.post("/api/v1/auth/register-user", json=fake_user)
     assert response.status_code == 400
 
 
@@ -31,7 +31,7 @@ async def test_create_user_with_invalid_email(client: AsyncClient) -> None:
     fake_user = create_fake_user()
     fake_user["email"] = "invalid_email"
 
-    response = await client.post("/api/v1/users/", json=fake_user)
+    response = await client.post("/api/v1/auth/register-user", json=fake_user)
     assert response.status_code == 422
 
 @pytest.mark.asyncio
@@ -40,7 +40,7 @@ async def test_create_user_with_invalid_password(client: AsyncClient) -> None:
     fake_user = create_fake_user()
     fake_user["password"] = "123"
 
-    response = await client.post("/api/v1/users/", json=fake_user)
+    response = await client.post("/api/v1/auth/register-user", json=fake_user)
     assert response.status_code == 422
 
 
@@ -49,9 +49,9 @@ async def test_user_login(client: AsyncClient) -> None:
     """Test user login."""
     fake_user = create_fake_user()
 
-    await client.post("/api/v1/users/", json=fake_user)
+    await client.post("/api/v1/auth/register-user", json=fake_user)
 
-    response = await client.post("/api/v1/users/login", json=fake_user)
+    response = await client.post("/api/v1/auth/login", json=fake_user)
     assert response.status_code == 200
     assert response.json()["data"]["access_token"] is not None
     assert response.json()["data"]["refresh_token"] is not None
@@ -63,7 +63,7 @@ async def test_user_login_with_invalid_email(client: AsyncClient) -> None:
     fake_user = create_fake_user()
     fake_user["email"] = "invalid_email"
 
-    response = await client.post("/api/v1/users/login", json=fake_user)
+    response = await client.post("/api/v1/auth/login", json=fake_user)
     assert response.status_code == 422
 
 
@@ -73,30 +73,30 @@ async def test_user_login_with_invalid_password(client: AsyncClient) -> None:
     fake_user = create_fake_user()
     fake_user["password"] = "1"
 
-    response = await client.post("/api/v1/users/login", json=fake_user)
+    response = await client.post("/api/v1/auth/login", json=fake_user)
     assert response.status_code == 400
 
 
 @pytest.mark.asyncio
 async def test_get_all_users(client: AsyncClient) -> None:
-    """Test get all users."""
+    """Test get all user."""
 
     await _create_user_and_login(client)
 
-    response = await client.get("/api/v1/users/")
+    response = await client.get("/api/v1/users/get-user")
     assert response.status_code == 200
     assert len(response.json()) > 0
-    assert response.json()["data"][0]["email"] is not None
+    assert response.json()["data"]["email"] is not None
 
 
 @pytest.mark.asyncio
 async def test_unauthorized_get_all_users(client: AsyncClient) -> None:
-    """Test get all users."""
+    """Test get all user."""
 
     # Clear headers
     client.headers.clear()
 
-    response = await client.get("/api/v1/users/")
+    response = await client.get("/api/v1/users/get-user")
     assert response.status_code == 401
     assert response.json() is not None
 

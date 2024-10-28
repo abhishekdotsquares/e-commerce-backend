@@ -8,9 +8,9 @@ async def _create_user_and_login(
 ) -> None:
     fake_user = create_fake_user()
 
-    await client.post("/api/v1/users/", json=fake_user)
+    await client.post("/api/v1/auth/register-user", json=fake_user)
 
-    response = await client.post("/api/v1/users/login", json=fake_user)
+    response = await client.post("/api/v1/auth/login", json=fake_user)
     access_token = response.json()["data"]["access_token"]
 
     client.headers.update({"Authorization": f"Bearer {access_token}"})
