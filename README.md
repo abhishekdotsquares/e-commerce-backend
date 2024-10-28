@@ -1,6 +1,6 @@
 # E-commerce Backend
 
-This e-commerce project follows a layered architecture that includes a model layer, a repository layer, a controller layer, and an API layer. It provides a robust and scalable backend solution for e-commerce applications.
+This e-commerce project follows a layered architecture comprising a model layer, repository layer, controller layer, and API layer, and it uses FastAPI framework and SQLite as the database.
 
 ## Project Setup
 
@@ -35,31 +35,25 @@ To set up the project, follow these steps:
    pip install -r requirements.txt
    ```
 
-5. **Create Migrations**  
-   Generate migration scripts for database changes:
-   ```bash
-   alembic revision --autogenerate -m "Modify database"
-   ```
-
-6. **Apply Migrations**  
+5. **Apply Migrations**  
    Apply the generated migrations to update the database schema:
    ```bash
    alembic upgrade head
    ```
 
-7. **Run the Server**  
+6. **Run the Server**  
    Start the application server:
    ```bash
    python main.py
    ```
 
-8. **Access Swagger Documentation**  
+7. **Access Swagger Documentation**  
    Visit the following URL to access the API documentation:
    ```
    http://<host>/docs
    ```
 
-9. **Run Test Cases**  
+8. **Run Test Cases**  
    Execute the test suite to ensure everything is functioning as expected:
    ```bash
    pytest -vv -s --cache-clear ./
@@ -68,7 +62,7 @@ To set up the project, follow these steps:
 
 ## Explanation of your authentication design decisions.
 
-I implemented a robust authentication mechanism featuring asynchronous database connections. This choice enhances performance under high concurrency, allowing multiple requests to be handled simultaneously without blocking. For user sessions, I utilized JWT authentication with refresh tokens, ensuring secure, stateless interactions. Passwords are hashed using bcrypt with unique salts, ensuring secure storage and protecting user credentials against potential breaches.
+I implemented a robust authentication mechanism featuring asynchronous database connections. This choice enhances performance under high concurrency, allowing multiple requests to be handled simultaneously without blocking. For user sessions, I utilized JWT authentication with refresh tokens, ensuring secure, stateless interactions. Passwords are hashed using passlib with hash, ensuring secure storage and protecting user credentials against potential breaches.
 
 ## Discussion on security measures implemented.
 
