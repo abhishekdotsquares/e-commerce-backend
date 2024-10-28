@@ -8,15 +8,34 @@ from core.database import Propagation, Transactional
 from core.exceptions import BadRequestException
 from core.security import JWTHandler, PasswordHandler
 
-BLACKLIST = set() # we can use redis for better approach
+BLACKLIST = set()  # we can use redis for a better approach
 
 class AuthController(BaseController[User]):
     def __init__(self, user_repository: UserRepository):
+        """
+        Initialize the AuthController.
+
+        Args:
+            user_repository (UserRepository): The repository for user data operations.
+        """
         super().__init__(model=User, repository=user_repository)
         self.user_repository = user_repository
 
     @Transactional(propagation=Propagation.REQUIRED)
     async def register(self, email: EmailStr, password: str) -> User:
+        """
+        Register a new user with the given email and password.
+
+        Args:
+            email (EmailStr): The email of the user to register.
+            password (str): The password for the user.
+
+        Returns:
+            User: The created user instance.
+
+        Raises:
+            BadRequestException: If a user with the given email already exists.
+        """
         # Check if user exists with email
         user = await self.user_repository.get_by_email(email)
 
@@ -33,6 +52,19 @@ class AuthController(BaseController[User]):
         )
 
     async def login(self, email: EmailStr, password: str) -> Token:
+        """
+        Log in a user and return authentication tokens.
+
+        Args:
+            email (EmailStr): The email of the user attempting to log in.
+            password (str): The password of the user.
+
+        Returns:
+            Token: An object containing the access and refresh tokens.
+
+        Raises:
+            BadRequestException: If the email is invalid or the password is incorrect.
+        """
         user = await self.user_repository.get_by_email(email)
 
         if not user:
@@ -47,6 +79,19 @@ class AuthController(BaseController[User]):
         )
 
     async def refresh_token(self, access_token: str, refresh_token: str) -> Token:
+        """
+        Refresh the user's access token using the refresh token.
+
+        Args:
+            access_token (str): The current access token.
+            refresh_token (str): The refresh token.
+
+        Returns:
+            Token: An object containing the new access token and the same refresh token.
+
+        Raises:
+            BadRequestException: If the refresh token is invalid.
+        """
         token = JWTHandler.decode(access_token)
         refresh_token_validate = JWTHandler.decode(refresh_token)
         if refresh_token_validate.get("sub") != "refresh_token":
@@ -58,7 +103,14 @@ class AuthController(BaseController[User]):
         )
     
     async def logout(self, access_token: str) -> None:
-        """Logout and blacklist the provided tokens."""
+        """
+        Logout the user by blacklisting the provided access token.
+
+        Args:
+            access_token (str): The access token to be blacklisted.
         
+        Returns:
+            None: Indicates successful logout.
+        """
         BLACKLIST.add(access_token)
         return True
