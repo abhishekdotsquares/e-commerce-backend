@@ -2,6 +2,9 @@
 
 This e-commerce project follows a layered architecture comprising a model layer, repository layer, controller layer, and API layer, and it uses FastAPI framework and SQLite as the database.
 
+## Important Notes
+Please make sure .env file should be in project directory. You can rename the .env.example to .env and do the required settings. 
+
 ## Project Setup
 
 To set up the project, follow these steps:
