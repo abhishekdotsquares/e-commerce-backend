@@ -55,15 +55,15 @@ async def change_password(
 
 @user_router.put("/users/update-profile", dependencies=[Depends(AuthenticationRequired)])
 async def update_profile(
-    request: ChangePasswordRequest,
+    request: UpdateProfileRequest,
     current_user: User = Depends(get_current_user),
     auth_controller: AuthController = Depends(Factory().get_auth_controller),
     user_controller: UserController = Depends(Factory().get_user_controller),
 ):
     try:
-        await auth_controller.login(
-            email=current_user.email, password=request.old_password
-        )
+        # await auth_controller.login(
+        #     email=current_user.email, password=request.old_password
+        # )
         password = PasswordHandler.hash(request.password)
         user = await user_controller.update(current_user.id, {"password": password,"email":request.email})
         data = UserResponse.model_validate(user).model_dump()

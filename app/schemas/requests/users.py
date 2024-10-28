@@ -48,9 +48,9 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
-class UpdateProfileRequest(BaseModel):
+class UpdateProfileRequest(RegisterUserRequest):
     email: Optional[EmailStr] = Field(None, description="User's email address")
-    # password: Optional[str] = Field(None, min_length=8, max_length=64, description="User's new password")
+    password: Optional[str] = Field(None, min_length=8, max_length=64, description="User's new password")
 
 class ForgetPasswordRequest(BaseModel):
     email: EmailStr = Field(..., description="User's email address")
