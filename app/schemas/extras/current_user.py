@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class CurrentUser(BaseModel):
     """
     Pydantic model representing the currently authenticated user.

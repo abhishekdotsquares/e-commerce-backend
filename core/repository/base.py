@@ -7,7 +7,7 @@ from sqlalchemy.sql.expression import select
 
 from core.database import Base
 
-ModelType = TypeVar("ModelType", bound=Base)
+ModelType = TypeVar("ModelType", bound=Base) # type: ignore
 
 
 class BaseRepository(Generic[ModelType]):

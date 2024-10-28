@@ -1,26 +1,18 @@
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends
 
 from app.controllers import AuthController, UserController
-from app.schemas.extras.token import Token
+from app.models.user import User
 from app.schemas.requests.users import (
-    LoginUserRequest,
-    ResetPasswordRequest,
-    RegisterUserRequest,
-    ForgetPasswordRequest,
     ChangePasswordRequest,
-    RefreshTokenRequest,
     UpdateProfileRequest,
 )
-from app.schemas.responses.users import UserResponse
 from app.schemas.responses.global_response import GlobalResponse
+from app.schemas.responses.users import UserResponse
+from core.exceptions import BadRequestException
 from core.factory import Factory
 from core.fastapi.dependencies import AuthenticationRequired
 from core.fastapi.dependencies.current_user import get_current_user
-from app.models.user import User
-from core.security import PasswordHandler, TokenHandler
-from core.exceptions import BadRequestException
-from typing import Optional
-import hashlib
+from core.security import PasswordHandler
 
 user_router = APIRouter()
 

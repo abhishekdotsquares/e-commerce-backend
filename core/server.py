@@ -1,9 +1,11 @@
 from typing import List
 
 from fastapi import Depends, FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 
 from api import router
 from core.config import config
@@ -15,8 +17,6 @@ from core.fastapi.middlewares import (
     ResponseLoggerMiddleware,
     SQLAlchemyMiddleware,
 )
-from fastapi.exceptions import RequestValidationError
-from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 
 
 def on_auth_error(request: Request, exc: Exception):

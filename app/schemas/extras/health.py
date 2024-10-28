@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class Health(BaseModel):
     """
     Pydantic model representing the health status of the application.

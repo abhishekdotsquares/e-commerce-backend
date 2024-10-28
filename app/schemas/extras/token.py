@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class Token(BaseModel):
     """
     Pydantic model representing an authentication token.

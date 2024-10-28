@@ -7,7 +7,7 @@ from core.database import Base, Propagation, Transactional
 from core.exceptions import NotFoundException
 from core.repository import BaseRepository
 
-ModelType = TypeVar("ModelType", bound=Base)
+ModelType = TypeVar("ModelType", bound=Base) # type: ignore
 
 
 class BaseController(Generic[ModelType]):

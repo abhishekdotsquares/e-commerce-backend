@@ -1,9 +1,9 @@
 from fastapi import Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from core.config import config
-from app.controllers.auth import BLACKLIST
 
+from app.controllers.auth import BLACKLIST
+from core.config import config
 from core.exceptions.base import CustomException
 
 

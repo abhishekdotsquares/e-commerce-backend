@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 
-
 from core.factory.factory import get_session
 from core.server import create_app
 

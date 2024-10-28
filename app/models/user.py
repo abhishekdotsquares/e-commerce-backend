@@ -1,8 +1,10 @@
 from uuid import uuid4
 
-from sqlalchemy import Integer, Column, Unicode, String
+from sqlalchemy import Column, Integer, String, Unicode
+
 from core.database import Base
 from core.database.mixins import TimestampMixin
+
 
 class User(Base, TimestampMixin):
     """

@@ -1,7 +1,8 @@
-from pydantic import BaseModel
 from typing import Any
-from fastapi.responses import JSONResponse
+
 from fastapi import status
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 
 class GlobalResponse(BaseModel):

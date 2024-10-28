@@ -1,7 +1,7 @@
-import uuid
 import hashlib
+import uuid
 from datetime import datetime, timedelta
-from fastapi import HTTPException
+
 
 class TokenHandler:
     @staticmethod
