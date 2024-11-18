@@ -14,7 +14,7 @@ sys.path.append(parent_dir)
 # access to the values within the .ini file in use.
 config = context.config
 fileConfig(config.config_file_name)
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+# sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 
 # Interpret the config file for Python logging.
@@ -33,6 +33,10 @@ from core.config import config as app_config
 
 target_metadata = Base.metadata
 
+neon_db_url = (
+   app_config.NEON_DB_HOST
+)
+
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -48,9 +52,19 @@ def run_migrations_offline():
     Calls to context.execute() here emit the given string to the
     script output.
     """
-    config.get_main_option("sqlalchemy.url")
+    # config.get_main_option("sqlalchemy.url")
+    # context.configure(
+    #     url=app_config.SQLITE_URL,
+    #     target_metadata=target_metadata,
+    #     literal_binds=True,
+    #     dialect_opts={"paramstyle": "named"},
+    # )
+
+    # with context.begin_transaction():
+    #     context.run_migrations()
+
     context.configure(
-        url=app_config.SQLITE_URL,
+        url=neon_db_url,  
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -72,7 +86,7 @@ async def run_migrations_online():
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
-    connectable = create_async_engine(app_config.SQLITE_URL, poolclass=pool.NullPool)
+    connectable = create_async_engine(app_config.neon_db_url, poolclass=pool.NullPool)
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

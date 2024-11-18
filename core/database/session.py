@@ -10,9 +10,13 @@ from sqlalchemy.orm import Session, declarative_base, sessionmaker
 from sqlalchemy.sql.expression import Delete, Insert, Update
 
 from core.config import config
+from core.config import config as app_config
 
 session_context: ContextVar[str] = ContextVar("session_context")
 
+neon_db_url = (
+   app_config.NEON_DB_HOST
+)
 
 def get_session_context() -> str:
     return session_context.get()
@@ -27,8 +31,8 @@ def reset_session_context(context: Token) -> None:
 
 
 engines = {
-    "writer": create_async_engine(config.SQLITE_URL, pool_recycle=3600),
-    "reader": create_async_engine(config.SQLITE_URL, pool_recycle=3600),
+    "writer": create_async_engine(config.neon_db_url, pool_recycle=3600),
+    "reader": create_async_engine(config.neon_db_url, pool_recycle=3600),
 }
 
 
@@ -63,5 +67,15 @@ async def get_session():
     finally:
         await session.close()
 
+AsyncSessionLocal = sessionmaker(
+    engines, class_=AsyncSession, expire_on_commit=False
+)
+
+async def get_db() -> AsyncSession:
+    """
+    This function provides the database session to be used in FastAPI endpoints.
+    """
+    async with AsyncSessionLocal() as db:
+        yield db
 
 Base = declarative_base()
