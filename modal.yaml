@@ -1,0 +1,14 @@
+name: fastapi-app
+entrypoint: main::app
+docker:
+  python_version: "3.10"
+  requirements: requirements.txt
+env:
+  DEFAULT_LOCALE: "en"
+  ENVIRONMENT: "production"
+  SQLITE_URL: "sqlite:///db.sqlite3"
+  RELEASE_VERSION: "1.0.0"
+  SHOW_SQL_ALCHEMY_QUERIES: "0"
+  SECRET_KEY: "mysecretkey"
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRE_MINUTES: "60"

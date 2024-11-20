@@ -6,9 +6,13 @@ from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
-
-from api import router
+from strawberry.fastapi import GraphQLRouter
+from api.v1.common import schema
+from sqlalchemy.ext.asyncio import AsyncSession
+# from app.controllers.company import CompanyController
+# from api import router
 from core.config import config
+from core.database.db import init_db
 from core.exceptions import CustomException
 from core.fastapi.dependencies import Logging
 from core.fastapi.middlewares import (
@@ -17,7 +21,7 @@ from core.fastapi.middlewares import (
     ResponseLoggerMiddleware,
     SQLAlchemyMiddleware,
 )
-
+from core.database.session import get_db
 
 def on_auth_error(request: Request, exc: Exception):
     status_code, error_code, message = 401, None, str(exc)
@@ -32,8 +36,8 @@ def on_auth_error(request: Request, exc: Exception):
     )
 
 
-def init_routers(app_: FastAPI) -> None:
-    app_.include_router(router)
+# def init_routers(app_: FastAPI) -> None:
+#     app_.include_router(router)
 
 
 def init_listeners(app_: FastAPI) -> None:
@@ -75,13 +79,29 @@ def create_app() -> FastAPI:
         dependencies=[Depends(Logging)],
         middleware=make_middleware(),
     )
-    init_routers(app_=app_)
+    # init_routers(app_=app_)
     init_listeners(app_=app_)
     return app_
 
+# async def get_context(db: AsyncSession = Depends(get_db)):
+#     return {
+#         "db": db,
+#         "company_controller": CompanyController()
+#     }
+from core.database.db import SessionLocal
 
+async def get_context():
+    async with SessionLocal() as session:
+        return {"db": session}
+        
+graphql_app = GraphQLRouter(schema, context_getter=get_context)
 app = create_app()
+app.include_router(graphql_app, prefix="/graphql")
 
+@app.on_event("startup")
+async def startup():
+    await init_db()
+    
 # Custom validation error handler
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

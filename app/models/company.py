@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from sqlalchemy import Column, Integer, String, Unicode, DateTime
+from sqlalchemy.ext.declarative import declarative_base
 
 from core.database import Base
 from core.database.mixins import TimestampMixin
@@ -8,7 +9,7 @@ from sqlalchemy import func
 
 
 
-class Company(Base):
+class Company(Base,TimestampMixin):
     __tablename__ = 'companies'
   
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
