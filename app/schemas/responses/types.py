@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Dict, Optional
 import uuid
 from datetime import datetime
 import graphene
@@ -36,3 +36,15 @@ class UserResponseType:
     email: str
     password: str
     is_superuser: bool
+
+@strawberry.type
+class SubscriptionPlansResponseType:
+    id: int
+    name: str
+    description: Optional[str] = None
+    price: float
+    duration_days: int
+    currency: Optional[str] = "USD"
+    features: Optional[str] = None
+    is_active: bool = True
+    trial_days: int = 0
