@@ -11,12 +11,12 @@ from core.config import config
 TEST_DATABASE_URL = os.getenv("TEST_SQLITE_URL")
 
 # Override the config to use the test database
-config.SQLITE_URL = TEST_DATABASE_URL
+os.getenv("SQLITE_URL") = TEST_DATABASE_URL
 
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncSession:
-    async_engine = create_async_engine(config.SQLITE_URL)
+    async_engine = create_async_engine(os.getenv("SQLITE_URL"))
     session = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
     async with session() as s:

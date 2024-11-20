@@ -7,13 +7,14 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.sql.expression import Update, Delete, Insert
-from core.config import config as app_config
+# from core.config import config as app_config
 from core.database.db import SessionLocal
+import os
 # Context variable to manage session context
 session_context: ContextVar[str] = ContextVar("session_context")
 
 # Database URL for Neon (assuming config holds the actual connection string)
-neon_db_url = app_config.NEON_DB_HOST
+neon_db_url = os.getenv("NEON_DB_HOST")
 
 # Engines for writer and reader
 engines = {

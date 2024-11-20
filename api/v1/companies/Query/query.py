@@ -2,7 +2,7 @@ from typing import List
 from sqlalchemy import select
 import strawberry
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas.responses.types import CompanyResponseType
+from app.schemas.responses.response_types import CompanyResponseType
 from app.models.company import Company
 from core.exceptions.validation_error import ValidationError
 

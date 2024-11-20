@@ -11,7 +11,7 @@ from api.v1.common import schema
 from sqlalchemy.ext.asyncio import AsyncSession
 # from app.controllers.company import CompanyController
 # from api import router
-from core.config import config
+# from core.config import config
 from core.database.db import init_db
 from core.exceptions import CustomException
 from core.fastapi.dependencies import Logging
@@ -22,7 +22,7 @@ from core.fastapi.middlewares import (
     SQLAlchemyMiddleware,
 )
 from core.database.session import get_db
-
+import os 
 def on_auth_error(request: Request, exc: Exception):
     status_code, error_code, message = 401, None, str(exc)
     if isinstance(exc, CustomException):
@@ -74,8 +74,8 @@ def create_app() -> FastAPI:
         title="e-commerce",
         description="e-commerce",
         version="1.0.0",
-        docs_url=None if config.ENVIRONMENT == "production" else "/docs",
-        redoc_url=None if config.ENVIRONMENT == "production" else "/redoc",
+        docs_url=None if os.getenv("ENVIRONMENT") == "production" else "/docs",
+        redoc_url=None if os.getenv("ENVIRONMENT") == "production" else "/redoc",
         dependencies=[Depends(Logging)],
         middleware=make_middleware(),
     )

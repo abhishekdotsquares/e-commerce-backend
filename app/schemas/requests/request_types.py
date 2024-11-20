@@ -3,25 +3,23 @@ from typing import Optional
 import uuid
 from datetime import datetime
 import graphene
-# from graphene import Field, ObjectType, Mutation, String, UUID
 import strawberry
 
-@strawberry.type
-class TokenType:
-    access_token: str
-    token_type: str
-    refresh_token: str
-
-@strawberry.type
-class ForgotPasswordResponseType:
-    success: bool
-    message: str
-    
     
 @strawberry.type
-class CompanyResponseType:
+class EnquiryRequestType:
     # id: strawberry.ID.
-    id: int
+    business_name: str
+    website_link: str
+    first_name: str
+    last_name: str
+    email: str
+    phone_number: str
+    is_approved: bool
+    
+@strawberry.type
+class CompanyRequestType:
+    # id: strawberry.ID.
     business_name: str
     website_link: str
     first_name: str
@@ -30,9 +28,8 @@ class CompanyResponseType:
     phone_number: str
     
 @strawberry.type
-class UserResponseType:
+class UserRequestType:
     # id: strawberry.ID.
-    id: int
     email: str
     password: str
     is_superuser: bool

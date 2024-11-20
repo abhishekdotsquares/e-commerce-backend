@@ -1,9 +1,10 @@
 from fastapi import Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
+import os 
 
 from app.controllers.auth import BLACKLIST
-from core.config import config
+# from core.config import config
 from core.exceptions.base import CustomException
 
 
@@ -27,8 +28,8 @@ class AuthenticationRequired:
              
             jwt.decode(
                 token.credentials,
-                config.SECRET_KEY,
-                algorithms=[config.JWT_ALGORITHM],
+                os.getenv("SECRET_KEY"),
+                algorithms=[os.getenv("JWT_ALGORITHM")],
             )
         except JWTError:
             raise AuthenticationRequiredException()

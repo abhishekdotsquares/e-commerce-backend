@@ -3,7 +3,8 @@ from uuid import uuid4
 import strawberry
 from app.models.passwordResetToken import PasswordResetToken
 from app.models.user import User
-from app.schemas.responses.types import ForgotPasswordResponseType, UserResponseType,TokenType
+from app.schemas.requests.request_types import UserRequestType
+from app.schemas.responses.response_types import ForgotPasswordResponseType, UserResponseType,TokenType
 from core.exceptions import BadRequestException
 from core.exceptions.validation_error import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
 from core.utils.email import send_email
 from core.utils.generate_token import create_access_token
+from sqlalchemy.orm import selectinload
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -25,7 +27,7 @@ class UserMutation:
         password: str,
         is_superuser: bool,
         info,
-    ) -> UserResponseType:
+    ) -> UserRequestType:
         db: AsyncSession = info.context['db']
 
         try:
@@ -127,15 +129,16 @@ class UserMutation:
 
         try:
             # Fetch the user by email
-            user = await db.scalar(
-                select(User).where(User.email == email)
-            )
+            async with db.begin():  # Ensure a properly scoped transaction
+                user = await db.scalar(select(User).where(User.email == email))
+
+
 
             if not user:
                 # Avoid revealing email validity for security
                 return ForgotPasswordResponseType(
-                    success=True,
-                    message="If the email is registered, you will receive a password reset link shortly."
+                    success=False,
+                    message="User not found."
                 )
 
             # Generate reset token
@@ -143,18 +146,21 @@ class UserMutation:
             token_expiry = datetime.now(timezone.utc) + timedelta(minutes=15)
 
             # Save reset token in the database
-            reset_entry = PasswordResetToken(
-                user_id=user.id,
-                token=reset_token,
-                expires_at=token_expiry
-            )
-            db.add(reset_entry)
-            await db.commit()
+            async with db.begin():
+
+                reset_entry = PasswordResetToken(
+                    user_id=user.id,
+                    token=reset_token,
+                    expires_at=token_expiry
+                )
+                db.add(reset_entry)
+                await db.commit()
 
             # Send reset email
             reset_link = f"https://192.168.9.230:3000/reset-password?token={reset_token}"
+            user_email = user.email
             email_body = f"""
-            <p>Hi {user.email},</p>
+            <p>Hi {user_email},</p>
             <p>You requested a password reset. Click the link below to reset your password:</p>
             <a href="{reset_link}">Reset Password</a>
             <p>If you did not request this, please ignore this email.</p>
@@ -168,7 +174,7 @@ class UserMutation:
             # Respond to user
             return ForgotPasswordResponseType(
                 success=True,
-                message="If the email is registered, you will receive a password reset link shortly."
+                message="Email sent successfully, you will receive a password reset link shortly."
             )
 
         except Exception as e:

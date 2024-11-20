@@ -1,6 +1,8 @@
 import strawberry
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas.responses.types import CompanyResponseType
+from api.v1.companies.utils.createCompany import createCompany
+from app.schemas.requests.request_types import CompanyRequestType
+from app.schemas.responses.response_types import CompanyResponseType
 from app.models.company import Company
 from core.exceptions.validation_error import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
@@ -10,9 +12,8 @@ from typing import Optional
 @strawberry.type
 class CompanyMutation:
     @strawberry.mutation
-    async def createCompany(
+    async def create_company(
         self,
-        id: int,
         business_name: str,
         website_link: str,
         first_name: str,
@@ -20,44 +21,11 @@ class CompanyMutation:
         email: str,
         phone_number: str,
         info
-    ) -> CompanyResponseType:
+    ) -> CompanyRequestType:
         db: AsyncSession = info.context['db']
-
         try:
-            # Validate inputs
-            if not business_name or not first_name or not last_name or not email or not phone_number:
-                raise ValidationError("All fields are required.")
-
-            # Check if the company ID already exists
-            existing_user = await db.get(Company, id)
-            if existing_user:
-                raise ValidationError(f"Company with ID {id} already exists.")
-
-            # Create the company
-            user = Company(
-                id=id,
-                business_name=business_name,
-                website_link=website_link,
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-                phone_number=phone_number,
-            )
-
-            # Add and commit
-            db.add(user)
-            await db.commit()
-            await db.refresh(user)
-
-            # Return response
-            return CompanyResponseType(
-                id=user.id,
-                business_name=user.business_name,
-                website_link=user.website_link,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                email=user.email,
-                phone_number=user.phone_number,
+            return await createCompany(
+                db, business_name, website_link, first_name, last_name, email, phone_number
             )
         except ValidationError as ve:
             raise ve
@@ -67,10 +35,10 @@ class CompanyMutation:
         except Exception as e:
             raise Exception("An unexpected error occurred while creating the company.") from e
 
+
     @strawberry.mutation
     async def updateCompany(
         self,
-        id: int,
         info,
         business_name: Optional[str] = None,
         website_link: Optional[str] = None,
@@ -78,7 +46,7 @@ class CompanyMutation:
         last_name: Optional[str] = None,
         email: Optional[str] = None,
         phone_number: Optional[str] = None,
-    ) -> CompanyResponseType:
+    ) -> CompanyRequestType:
         db: AsyncSession = info.context['db']
 
         try:

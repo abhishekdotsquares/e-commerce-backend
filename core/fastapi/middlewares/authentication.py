@@ -8,7 +8,8 @@ from starlette.middleware.authentication import (
 from starlette.requests import HTTPConnection
 
 from app.schemas.extras.current_user import CurrentUser
-from core.config import config
+# from core.config import config
+import os 
 
 
 class AuthBackend(AuthenticationBackend):
@@ -35,8 +36,8 @@ class AuthBackend(AuthenticationBackend):
         try:
             payload = jwt.decode(
                 token,
-                config.SECRET_KEY,
-                algorithms=[config.JWT_ALGORITHM],
+                os.getenv('SECRET_KEY'),
+                algorithms=[os.getenv('JWT_ALGORITHM')],
             )
             user_id = payload.get("user_id")
         except JWTError:
