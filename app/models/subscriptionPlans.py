@@ -4,6 +4,7 @@ from core.database import Base
 from core.database.mixins import TimestampMixin
 from sqlalchemy import func
 # from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 # Base = declarative_base()
 
@@ -24,5 +25,7 @@ class SubscriptionPlans(Base,TimestampMixin):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)  
     deleted_at = Column(DateTime, nullable=True) 
 
+    # Relationship with subscriptions
+    subscriptions = relationship("companyPlanAssociations", back_populates="plan")
     __mapper_args__ = {"eager_defaults": True}
 

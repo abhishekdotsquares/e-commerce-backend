@@ -43,8 +43,17 @@ class SubscriptionPlansResponseType:
     name: str
     description: Optional[str] = None
     price: float
-    duration_days: int
+    durationDays: int
     currency: Optional[str] = "USD"
     features: Optional[str] = None
-    is_active: bool = True
-    trial_days: int = 0
+    isActive: bool = True
+    trialDays: int = 0
+
+@strawberry.type
+class CompanySubscribedPlansResponse:
+    id: int
+    company_id: int
+    plan_id: int
+    start_date: datetime
+    end_date: datetime
+    is_active: bool

@@ -5,7 +5,7 @@ from app.models.subscriptionPlans import SubscriptionPlans
 from core.exceptions.validation_error import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Optional
-
+from sqlalchemy.future import select
 
 @strawberry.type
 class PlanMutation:
@@ -16,18 +16,18 @@ class PlanMutation:
         name: str,
         description: str,
         price: float,
-        duration_days: int,
+        durationDays: int,
         currency: str,
         features: str,
-        is_active: bool,
-        trial_days: int,
+        isActive: bool,
+        trialDays: int,
         info
     ) -> SubscriptionPlansResponseType:
         db: AsyncSession = info.context['db']
 
         try:
             # Validate inputs
-            if not name or not price or not duration_days :
+            if not name or not price or not durationDays :
                 raise ValidationError("All fields are required.")
 
             # Check if the plan ID already exists
@@ -41,11 +41,11 @@ class PlanMutation:
                 name=name,
                 description=description,
                 price=price,
-                duration_days=duration_days,
+                duration_days=durationDays,
                 currency=currency,
                 features=features,
-                is_active=is_active,
-                trial_days=trial_days,
+                is_active=isActive,
+                trial_days=trialDays,
             )
 
             # Add and commit
@@ -59,11 +59,11 @@ class PlanMutation:
                 name=name,
                 description=description,
                 price=price,
-                duration_days=duration_days,
+                duration_days=durationDays,
                 currency=currency,
                 features=features,
-                is_active=is_active,
-                trial_days=trial_days,
+                is_active=isActive,
+                trial_days=trialDays,
             )
         except ValidationError as ve:
             raise ve
@@ -71,7 +71,7 @@ class PlanMutation:
             await db.rollback()
             raise Exception(f"Database error occurred while creating the plan. {sae}") from sae
         except Exception as e:
-            raise Exception("An unexpected error occurred while creating the plan.") from e
+            raise Exception(f"An unexpected error occurred while creating the plan. {e}") from e
 
     @strawberry.mutation
     async def updatePlan(

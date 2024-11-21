@@ -31,5 +31,5 @@ async def client(app: FastAPI, db_session) -> AsyncClient:
 
     app.dependency_overrides[get_session] = _get_session
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://0.0.0.0:5010") as client:
         yield client

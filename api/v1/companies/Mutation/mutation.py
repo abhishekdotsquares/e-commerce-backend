@@ -1,7 +1,10 @@
+from datetime import datetime, timedelta
 import strawberry
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.responses.types import CompanyResponseType
+from app.schemas.responses.types import CompanySubscribedPlansResponse
 from app.models.company import Company
+from app.models.companyPlanAssociations import companyPlanAssociations
 from core.exceptions.validation_error import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Optional
@@ -149,3 +152,49 @@ class CompanyMutation:
         except Exception as e:
             raise Exception("An unexpected error occurred while deleting the company.") from e
     
+    @strawberry.mutation
+    async def createCompanySubscribedPlan(
+        self,
+        company_id: int,
+        plan_id: int,
+        start_date: str,
+        end_date: str,
+        is_active: bool,
+        info
+    ) -> CompanySubscribedPlansResponse:
+        # Get the database session from the context
+        db: AsyncSession = info.context['db']
+        
+        # Convert date strings to datetime objects
+        start_date = datetime.now()
+
+        end_date = start_date + timedelta(days=15)
+
+        # Create the new subscription plan
+        new_plan = companyPlanAssociations(
+            company_id=company_id,
+            plan_id=plan_id,
+            start_date=start_date,
+            end_date=end_date,
+            is_active=is_active
+        )
+
+        try:
+            # Add to the session and commit to the database
+            db.add(new_plan)
+            await db.commit()
+            await db.refresh(new_plan)
+
+            # Return the response object
+            return CompanySubscribedPlansResponse(
+                id=new_plan.id,
+                company_id=new_plan.company_id,
+                plan_id=new_plan.plan_id,
+                start_date=new_plan.start_date,
+                end_date=new_plan.end_date,
+                is_active=new_plan.is_active
+            )
+
+        except Exception as e:
+            await db.rollback()
+            raise Exception(f"Error creating subscription plan: {str(e)}")
