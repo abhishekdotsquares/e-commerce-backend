@@ -18,10 +18,10 @@ class AuthBackend(AuthenticationBackend):
     ) -> Tuple[bool, Optional[CurrentUser]]:
         current_user = CurrentUser()
 
-        authorization: str = conn.headers.get("authorization")
+        authorization: str = conn
 
         if not authorization:
-            return False, current_user
+            return False
 
         try:
             scheme, token = authorization.split(" ")
@@ -44,7 +44,7 @@ class AuthBackend(AuthenticationBackend):
             return False, current_user
 
         current_user.id = user_id
-        return True, current_user
+        return True
 
 
 class AuthenticationMiddleware(BaseAuthenticationMiddleware):

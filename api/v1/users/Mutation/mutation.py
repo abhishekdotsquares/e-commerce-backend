@@ -11,8 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
+from core.security.jwt import JWTHandler
 from core.utils.email import send_email
-from core.utils.generate_token import create_access_token
+from core.security.token_auth import create_access_token
 from sqlalchemy.orm import selectinload
 
 
@@ -95,21 +96,14 @@ class UserMutation:
             if not pwd_context.verify(password, user.password):
                 raise BadRequestException("Invalid email or password.")
 
-            # Create a JWT token
-            token_data = {"sub": user.email}
-            access_token = create_access_token(data=token_data)
+            access_token=JWTHandler.encode(payload={"user_id": user.id}),
+            refresh_token=JWTHandler.encode(payload={"sub": "refresh_token"}),
             
-            refresh_token_data = {"sub": user.email, "scope": "refresh"}
-            refresh_token = create_access_token(
-                data=refresh_token_data,
-                expires_delta=timedelta(days=7),  # Example: 7-day expiry for refresh token
-            )
-            
-            # Return the token response
+          
             return TokenType(
-                access_token=access_token,
+                access_token=access_token[0],
                 token_type="bearer",
-                refresh_token=refresh_token,
+                refresh_token=refresh_token[0],
             )
 
         except BadRequestException as e:
@@ -179,3 +173,62 @@ class UserMutation:
 
         except Exception as e:
             raise Exception("An unexpected error occurred while processing the forgot password request.") from e
+    
+    @strawberry.mutation
+    async def resetPassword(
+        self,
+        token: str,
+        new_password: str,
+        info,
+    ) -> ForgotPasswordResponseType:
+        db: AsyncSession = info.context['db']
+
+        try:
+            # Step 1: Fetch the reset token record from the database
+            async with db.begin():
+                reset_entry = await db.scalar(
+                    select(PasswordResetToken).where(PasswordResetToken.token == token)
+                )
+
+            if not reset_entry:
+                return ForgotPasswordResponseType(
+                    success=False,
+                    message="Invalid or expired token."
+                )
+
+            # Step 2: Check if the token is expired
+            if reset_entry.expires_at < datetime.now(timezone.utc):
+                return ForgotPasswordResponseType(
+                    success=False,
+                    message="The reset token has expired. Please request a new one."
+                )
+
+            # Step 3: Fetch the associated user
+            async with db.begin():
+                user = await db.get(User, reset_entry.user_id)
+
+            if not user:
+                return ForgotPasswordResponseType(
+                    success=False,
+                    message="User associated with the reset token not found."
+                )
+
+            # Step 4: Hash the new password
+            hashed_password = pwd_context.hash(new_password)  # Replace with your hashing function
+
+            # Step 5: Update the user's password
+            async with db.begin():
+                user.password = hashed_password
+                db.add(user)
+                # Invalidate the reset token by deleting it
+                await db.delete(reset_entry)
+                await db.commit()
+
+            # Respond to the user
+            return ForgotPasswordResponseType(
+                success=True,
+                message="Password has been reset successfully. You can now log in with your new password."
+            )
+
+        except Exception as e:
+            raise Exception("An unexpected error occurred while resetting the password.") from e

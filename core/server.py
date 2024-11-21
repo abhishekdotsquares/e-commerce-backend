@@ -16,7 +16,7 @@ from core.database.db import init_db
 from core.exceptions import CustomException
 from core.fastapi.dependencies import Logging
 from core.fastapi.middlewares import (
-    AuthBackend,
+    # AuthBackend,
     AuthenticationMiddleware,
     ResponseLoggerMiddleware,
     SQLAlchemyMiddleware,
@@ -58,11 +58,11 @@ def make_middleware() -> List[Middleware]:
             allow_methods=["*"],
             allow_headers=["*"],
         ),
-        Middleware(
-            AuthenticationMiddleware,
-            backend=AuthBackend(),
-            on_error=on_auth_error,
-        ),
+        # Middleware(
+        #     AuthenticationMiddleware,
+        #     backend=AuthBackend(),
+        #     on_error=on_auth_error,
+        # ),
         Middleware(SQLAlchemyMiddleware),
         Middleware(ResponseLoggerMiddleware),
     ]
@@ -90,9 +90,16 @@ def create_app() -> FastAPI:
 #     }
 from core.database.db import SessionLocal
 
-async def get_context():
+async def get_context(request: Request):
+    # Extract the authorization header from the request
+    authorization_header = request.headers.get('authorization')
+
+    # Create the context with db and authorization header
     async with SessionLocal() as session:
-        return {"db": session}
+        return {
+            "db": session,
+            "authorization": authorization_header  # Add the authorization header here
+        }
         
 graphql_app = GraphQLRouter(schema, context_getter=get_context)
 app = create_app()
