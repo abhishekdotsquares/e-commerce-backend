@@ -15,7 +15,8 @@ class EnquiryRequestType:
     last_name: str
     email: str
     phone_number: str
-    is_approved: bool
+    status:bool
+    message:str
     
 @strawberry.type
 class CompanyRequestType:

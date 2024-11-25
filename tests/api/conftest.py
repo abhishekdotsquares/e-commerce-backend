@@ -1,35 +1,34 @@
-from typing import Any, Generator
+import os
 
-import pytest
 import pytest_asyncio
-from fastapi import FastAPI
-from httpx import AsyncClient
-from httpx._transports.asgi import ASGITransport
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
-from core.factory.factory import get_session
-from core.server import create_app
+import core.database.transactional as transactional
+from app.models import Base
+# from core.config import config
 
+TEST_DATABASE_URL = os.getenv("NEON_DB_HOST")
 
-@pytest.fixture(scope="session")
-def app() -> Generator[FastAPI, Any, None]:
-    """
-    Create a new FastAPI app
-    """
-    app = create_app()
-
-    yield app
+# Override the config to use the test database
+# config.SQLITE_URL = TEST_DATABASE_URL
 
 
 @pytest_asyncio.fixture(scope="function")
-async def client(app: FastAPI, db_session) -> AsyncClient:
-    """
-    Create a new FastAPI AsyncClient
-    """
+async def db_session() -> AsyncSession:
+    # async_engine = create_async_engine(config.SQLITE_URL)
+    async_engine = create_async_engine(TEST_DATABASE_URL)
+    session = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
-    async def _get_session():
-        return db_session
+    async with session() as s:
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
-    app.dependency_overrides[get_session] = _get_session
+        transactional.session = s
+        yield s
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        yield client
+    # async with async_engine.begin() as conn:
+    #     await conn.run_sync(Base.metadata.drop_all)
+    #     pass
+
+    await async_engine.dispose()

@@ -1,8 +1,8 @@
 """Modify database
 
-Revision ID: e05de06a086d
+Revision ID: e2853c1b4c56
 Revises: 
-Create Date: 2024-11-20 14:35:50.309035
+Create Date: 2024-11-22 18:59:47.620491
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'e05de06a086d'
+revision = 'e2853c1b4c56'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -25,8 +25,25 @@ def upgrade():
     sa.Column('website_link', sa.String(length=255), nullable=True),
     sa.Column('first_name', sa.String(length=100), nullable=False),
     sa.Column('last_name', sa.String(length=100), nullable=False),
-    sa.Column('email', sa.Unicode(length=255), nullable=False),
+    sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('phone_number', sa.String(length=20), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email'),
+    sa.UniqueConstraint('uuid')
+    )
+    op.create_table('enquiries',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('uuid', sa.String(length=36), nullable=False),
+    sa.Column('business_name', sa.String(length=255), nullable=False),
+    sa.Column('website_link', sa.String(length=255), nullable=True),
+    sa.Column('first_name', sa.String(length=100), nullable=False),
+    sa.Column('last_name', sa.String(length=100), nullable=False),
+    sa.Column('email', sa.String(length=255), nullable=False),
+    sa.Column('phone_number', sa.String(length=20), nullable=True),
+    sa.Column('is_approved', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('deleted_at', sa.DateTime(), nullable=True),
@@ -37,7 +54,7 @@ def upgrade():
     op.create_table('users',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('uuid', sa.String(length=36), nullable=False),
-    sa.Column('email', sa.Unicode(length=255), nullable=False),
+    sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('password', sa.Unicode(length=255), nullable=False),
     sa.Column('is_superuser', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
@@ -51,7 +68,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('token', sa.String(length=255), nullable=False),
-    sa.Column('expires_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('deleted_at', sa.DateTime(), nullable=True),
@@ -68,5 +85,6 @@ def downgrade():
     op.drop_index(op.f('ix_password_reset_tokens_id'), table_name='password_reset_tokens')
     op.drop_table('password_reset_tokens')
     op.drop_table('users')
+    op.drop_table('enquiries')
     op.drop_table('companies')
     # ### end Alembic commands ###

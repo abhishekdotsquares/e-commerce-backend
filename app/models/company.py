@@ -18,7 +18,7 @@ class Company(Base,TimestampMixin):
     website_link = Column(String(255), nullable=True)  
     first_name = Column(String(100), nullable=False)  
     last_name = Column(String(100), nullable=False)  
-    email = Column(Unicode(255), nullable=False, unique=True)  
+    email = Column(String(255), nullable=False, unique=True)  
     phone_number = Column(String(20), nullable=True)  
     created_at = Column(DateTime, server_default=func.now(), nullable=False)  
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)  

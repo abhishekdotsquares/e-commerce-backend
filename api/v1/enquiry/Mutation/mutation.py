@@ -1,3 +1,4 @@
+from sqlalchemy import select
 import strawberry
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.v1.check_auth import check_authentication
@@ -22,20 +23,19 @@ class EnquiryMutation:
         last_name: str,
         email: str,
         phone_number: str,
-        is_approved: bool,
         info
     ) -> EnquiryRequestType:
         db: AsyncSession = info.context["db"]
         try:
             # Validate inputs
-            if not business_name or not first_name or not last_name or not email or not phone_number or not is_approved:
+            if not business_name or not first_name or not last_name or not email or not phone_number:
                 raise ValidationError("All fields are required.")
 
             # Check if the Enquiry ID already exists
-            existing_user = await db.get(Enquiry, id)
-            if existing_user:
-                raise ValidationError(f"Enquiry with ID {id} already exists.")
             
+            result = await db.execute(select(Enquiry).where(Enquiry.email == email))
+            if result.raw.rowcount > 0:
+                raise ValidationError(f"Enquiry with email {email} already exists.")
 
             # Create the company
             user = Enquiry(
@@ -55,14 +55,8 @@ class EnquiryMutation:
 
             # Return response
             return EnquiryResponseType(
-                id=user.id,
-                business_name=user.business_name,
-                website_link=user.website_link,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                email=user.email,
-                phone_number=user.phone_number,
-                is_approved=user.is_approved,
+                status=True,
+                message="Account Created Successfully.Please Log In"
             )
         except ValidationError as ve:
             raise ve
@@ -120,14 +114,8 @@ class EnquiryMutation:
                 await db.refresh(enquiry)
 
                 return EnquiryResponseType(
-                    id=enquiry.id,
-                    business_name=enquiry.business_name,
-                    website_link=enquiry.website_link,
-                    first_name=enquiry.first_name,
-                    last_name=enquiry.last_name,
-                    email=enquiry.email,
-                    phone_number=enquiry.phone_number,
-                    is_approved=enquiry.is_approved,
+                    success=True,
+                    message="Account Updated Successfully"
                 )
             except Exception as e:
                 await db.rollback()

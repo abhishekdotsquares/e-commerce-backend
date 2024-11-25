@@ -1,3 +1,5 @@
+import asyncio
+from contextlib import asynccontextmanager
 from typing import List
 
 from fastapi import Depends, FastAPI, Request
@@ -48,6 +50,9 @@ def init_listeners(app_: FastAPI) -> None:
             content={"error_code": exc.error_code, "message": exc.message},
         )
 
+origins = [
+    "http://192.168.9.230:3000/",  # React frontend (adjust port as needed)
+]
 
 def make_middleware() -> List[Middleware]:
     middleware = [
@@ -68,7 +73,15 @@ def make_middleware() -> List[Middleware]:
     ]
     return middleware
 
-
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting up...")
+    # You can initialize connections, services here
+    yield
+    print("Shutting down...")
+    # Close connections, services here
+    await asyncio.sleep(1)  # Example cleanup (like closing DB connections)
+    
 def create_app() -> FastAPI:
     app_ = FastAPI(
         title="e-commerce",
@@ -78,6 +91,7 @@ def create_app() -> FastAPI:
         redoc_url=None if os.getenv("ENVIRONMENT") == "production" else "/redoc",
         dependencies=[Depends(Logging)],
         middleware=make_middleware(),
+        lifespan=lifespan
     )
     # init_routers(app_=app_)
     init_listeners(app_=app_)
@@ -104,6 +118,7 @@ async def get_context(request: Request):
 graphql_app = GraphQLRouter(schema, context_getter=get_context)
 app = create_app()
 app.include_router(graphql_app, prefix="/graphql")
+
 
 @app.on_event("startup")
 async def startup():

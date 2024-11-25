@@ -35,15 +35,12 @@ class UserMutation:
             # Validate inputs
             if not email or not password or is_superuser is None:
                 raise ValidationError("All fields are required.")
-
+            
             # Check if the user already exists
-            existing_user = await db.execute(
-                User.__table__.select().filter(User.email == email)
-            )
-            existing_user = existing_user.scalars().first()
-
-            if existing_user:
+            result = await db.execute(select(User).where(User.email == email))
+            if result.raw.rowcount > 0:
                 raise ValidationError(f"User with email {email} already exists.")
+
 
             # Hash the password
             hashed_password = pwd_context.hash(password)
@@ -214,7 +211,7 @@ class UserMutation:
                 )
 
             # Step 4: Hash the new password
-            hashed_password = pwd_context.hash(new_password)  # Replace with your hashing function
+            hashed_password = pwd_context.hash(new_password)
 
             # Step 5: Update the user's password
             async with db.begin():
@@ -224,7 +221,6 @@ class UserMutation:
                 await db.delete(reset_entry)
                 await db.commit()
 
-            # Respond to the user
             return ForgotPasswordResponseType(
                 success=True,
                 message="Password has been reset successfully. You can now log in with your new password."

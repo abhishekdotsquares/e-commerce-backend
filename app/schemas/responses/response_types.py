@@ -20,14 +20,8 @@ class ForgotPasswordResponseType:
 @strawberry.type
 class EnquiryResponseType:
     # id: strawberry.ID.
-    id: int
-    business_name: str
-    website_link: str
-    first_name: str
-    last_name: str
-    email: str
-    phone_number: str
-    is_approved: bool
+    status: bool
+    message: str
     
 @strawberry.type
 class CompanyResponseType:

@@ -30,12 +30,12 @@ from app.models import Base
 # from core.database import Base
 
 # For auto generate schemas
-from core.config import config as app_config
+# from core.config import config as app_config
 
 target_metadata = Base.metadata
 
 neon_db_url = (
-   app_config.NEON_DB_HOST
+   os.getenv("NEON_DB_HOST")
 )
 
 # other values from the config, defined by the needs of env.py,
@@ -87,7 +87,7 @@ async def run_migrations_online():
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
-    connectable = create_async_engine(app_config.neon_db_url, poolclass=pool.NullPool)
+    connectable = create_async_engine(os.getenv("NEON_DB_HOST"), poolclass=pool.NullPool)
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

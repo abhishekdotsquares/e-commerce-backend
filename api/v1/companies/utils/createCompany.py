@@ -1,3 +1,4 @@
+from sqlalchemy import select
 import strawberry
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.requests.request_types import CompanyRequestType
@@ -25,9 +26,9 @@ async def createCompany(
         raise ValidationError("All fields are required.")
 
     # Check if the company ID already exists
-    existing_user = await db.get(Company, email)
-    if existing_user:
-        raise ValidationError(f"Company with email {email} already exists.")
+    result = await db.execute(select(Company).where(Company.email == email))
+    if result.raw.rowcount > 0:
+        raise ValidationError(f"company with email {email} already exists.")
 
     # Create the company
     user = Company(
