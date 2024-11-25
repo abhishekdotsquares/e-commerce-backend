@@ -71,7 +71,10 @@ async def test_approve_enquiry_already_approved():
     """Test approving an already approved enquiry."""
     # Mock database session and context
     mock_db = AsyncMock(spec=AsyncSession)
-    mock_context = {"db": mock_db}
+    mock_context = {
+        "db": mock_db,
+        "authorization": "Bearer test_jwt_token",  # Add authorization header mock
+    }
 
     # Input data
     enquiry_id = 1
