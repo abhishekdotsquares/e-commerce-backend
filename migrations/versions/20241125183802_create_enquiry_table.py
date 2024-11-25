@@ -1,14 +1,8 @@
-"""Initial migration
+"""create enquiry table
 
-<<<<<<<< HEAD:migrations/versions/20241125150654_initial_migration.py
-Revision ID: ceeb4765058c
+Revision ID: f929dad0cb2d
 Revises: 
-Create Date: 2024-11-25 15:06:54.787658
-========
-Revision ID: e2853c1b4c56
-Revises: 
-Create Date: 2024-11-22 18:59:47.620491
->>>>>>>> feature/phase-1-backend:migrations/versions/20241122185947_modify_database.py
+Create Date: 2024-11-25 18:38:02.077962
 
 """
 from alembic import op
@@ -16,11 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-<<<<<<<< HEAD:migrations/versions/20241125150654_initial_migration.py
-revision = 'ceeb4765058c'
-========
-revision = 'e2853c1b4c56'
->>>>>>>> feature/phase-1-backend:migrations/versions/20241122185947_modify_database.py
+revision = 'f929dad0cb2d'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -44,18 +34,6 @@ def upgrade():
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('uuid')
     )
-<<<<<<<< HEAD:migrations/versions/20241125150654_initial_migration.py
-    op.create_table('subscription_plans',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('name', sa.String(length=100), nullable=False),
-    sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('price', sa.Float(), nullable=False),
-    sa.Column('duration_days', sa.Integer(), nullable=False),
-    sa.Column('currency', sa.String(length=10), nullable=False),
-    sa.Column('features', sa.JSON(), nullable=True),
-    sa.Column('trial_days', sa.Integer(), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=True),
-========
     op.create_table('enquiries',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('uuid', sa.String(length=36), nullable=False),
@@ -66,20 +44,32 @@ def upgrade():
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('phone_number', sa.String(length=20), nullable=True),
     sa.Column('is_approved', sa.Boolean(), nullable=False),
->>>>>>>> feature/phase-1-backend:migrations/versions/20241122185947_modify_database.py
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
-<<<<<<<< HEAD:migrations/versions/20241125150654_initial_migration.py
-    sa.UniqueConstraint('name')
-    )
-    op.create_index(op.f('ix_subscription_plans_id'), 'subscription_plans', ['id'], unique=False)
-========
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('uuid')
     )
->>>>>>>> feature/phase-1-backend:migrations/versions/20241122185947_modify_database.py
+    op.create_table('subscription_plans',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('stripe_plan_id', sa.String(length=255), nullable=False),
+    sa.Column('stripe_price_id', sa.String(length=255), nullable=False),
+    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('price', sa.Float(), nullable=False),
+    sa.Column('duration_days', sa.Enum('QUARTERLY', 'MONTHLY', 'YEARLY', name='durationtype'), nullable=False),
+    sa.Column('currency', sa.String(length=10), nullable=False),
+    sa.Column('features', sa.JSON(), nullable=True),
+    sa.Column('trial_days', sa.Integer(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name')
+    )
+    op.create_index(op.f('ix_subscription_plans_id'), 'subscription_plans', ['id'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('uuid', sa.String(length=36), nullable=False),
@@ -131,11 +121,8 @@ def downgrade():
     op.drop_index(op.f('ix_company_subscribed_plans_id'), table_name='company_subscribed_plans')
     op.drop_table('company_subscribed_plans')
     op.drop_table('users')
-<<<<<<<< HEAD:migrations/versions/20241125150654_initial_migration.py
     op.drop_index(op.f('ix_subscription_plans_id'), table_name='subscription_plans')
     op.drop_table('subscription_plans')
-========
     op.drop_table('enquiries')
->>>>>>>> feature/phase-1-backend:migrations/versions/20241122185947_modify_database.py
     op.drop_table('companies')
     # ### end Alembic commands ###

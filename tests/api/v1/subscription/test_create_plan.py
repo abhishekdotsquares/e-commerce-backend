@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from api.v1.subscription_plans.Mutation.mutation import PlanMutation
 from app.models.subscriptionPlans import SubscriptionPlans
-from app.schemas.responses.types import SubscriptionPlansResponseType
+from app.schemas.responses.response_types import SubscriptionPlansResponseType
 
 @pytest.mark.asyncio
 async def test_create_plan_success():

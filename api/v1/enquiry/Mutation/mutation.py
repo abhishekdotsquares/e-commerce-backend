@@ -64,7 +64,7 @@ class EnquiryMutation:
             await db.rollback()
             raise Exception("Database error occurred while submitting the enquiry.") from sae
         except Exception as e:
-            raise Exception("An unexpected error occurred while submitting the enquiry.") from e
+            raise Exception(f"An unexpected error occurred while submitting the enquiry.{e}") from e
     
     @strawberry.mutation
     async def update_enquiry(
@@ -114,7 +114,7 @@ class EnquiryMutation:
                 await db.refresh(enquiry)
 
                 return EnquiryResponseType(
-                    success=True,
+                    status=True,
                     message="Account Updated Successfully"
                 )
             except Exception as e:
@@ -185,11 +185,11 @@ class EnquiryMutation:
                     # Rollback the approval if company creation fails
                     enquiry.is_approved = False
                     await db.commit()
-                    raise Exception("Error while creating the company. Approval reverted.") from e
+                    raise Exception(f"Error while creating the company. Approval reverted.{e}") from e
             except ValidationError as ve:
                 raise ve
             except SQLAlchemyError as sae:
                 await db.rollback()
                 raise Exception("Database error occurred while approving the enquiry.") from sae
             except Exception as e:
-                raise Exception("An unexpected error occurred while processing the approval and company creation.") from e
+                raise Exception(f"An unexpected error occurred while processing the approval and company creation.{e}") from e

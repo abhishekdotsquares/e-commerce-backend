@@ -55,7 +55,7 @@ class CompanyResponseType:
     last_name: str
     email: str
     phone_number: str
-    subscription_plans: list[SubscriptionPlansResponseType]
+    #subscription_plans: list[SubscriptionPlansResponseType]
     
 @strawberry.type
 class CompanySubscribedPlansResponse:
