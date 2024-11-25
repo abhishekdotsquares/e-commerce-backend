@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import List, Optional
 import uuid
 from datetime import datetime
 import graphene
@@ -14,30 +14,60 @@ class TokenType:
 
 @strawberry.type
 class ForgotPasswordResponseType:
-    success: bool
-    message: str
-    
-@strawberry.type
-class EnquiryResponseType:
-    # id: strawberry.ID.
     status: bool
     message: str
     
 @strawberry.type
-class CompanyResponseType:
-    # id: strawberry.ID.
-    id: int
-    business_name: str
-    website_link: str
-    first_name: str
-    last_name: str
-    email: str
-    phone_number: str
+class EnquiryResponseType:
+    status: bool
+    message: str
+    id: Optional[int] = None
+    business_name: Optional[str] = None
+    website_link: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    phone_number: Optional[str] = None
+    is_approved: Optional[bool] = None
     
 @strawberry.type
+class CompanyResponseType:
+    status: bool
+    message: str
+    id: Optional[int] = None
+    business_name: Optional[str] = None
+    website_link: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    phone_number: Optional[str] = None
+   
+@strawberry.type
+class CompaniesListResponseType:
+    status: bool
+    message: str
+    companies: List[CompanyResponseType]
+    total_pages: Optional[int] = None
+    total_records: Optional[int] = None
+    
+@strawberry.type
+class EnquiriesListResponseType:
+    status: bool
+    message: str
+    enquiries: List[CompanyResponseType]
+  
+@strawberry.type
 class UserResponseType:
-    # id: strawberry.ID.
-    id: int
-    email: str
-    password: str
-    is_superuser: bool
+    status: bool
+    message: str
+    id: Optional[int] = None
+    email: Optional[str] = None
+    is_superuser: Optional[bool] = None
+
+@strawberry.type
+class LoginResponseType:
+    status: bool
+    message: str
+    access_token: Optional[str] = None  # Make access_token nullable
+    refresh_token: Optional[str] = None  # Make refresh_token nullable
+

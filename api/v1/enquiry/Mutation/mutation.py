@@ -10,7 +10,7 @@ from app.models.company import Company
 from core.exceptions.validation_error import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Optional
-
+import re
 
 @strawberry.type
 class EnquiryMutation:
@@ -24,21 +24,33 @@ class EnquiryMutation:
         email: str,
         phone_number: str,
         info
-    ) -> EnquiryRequestType:
+    ) -> EnquiryResponseType:
         db: AsyncSession = info.context["db"]
         try:
-            # Validate inputs
+            # Step 1: Validate inputs
             if not business_name or not first_name or not last_name or not email or not phone_number:
-                raise ValidationError("All fields are required.")
+                return EnquiryResponseType(
+                    status=False,
+                    message="All fields are required."
+                )
 
-            # Check if the Enquiry ID already exists
-            
+            # Validate email format
+            if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+                return EnquiryResponseType(
+                    status=False,
+                    message="Invalid email format."
+                )
+
+            # Step 2: Check if the enquiry with the same email already exists
             result = await db.execute(select(Enquiry).where(Enquiry.email == email))
             if result.raw.rowcount > 0:
-                raise ValidationError(f"Enquiry with email {email} already exists.")
+                return EnquiryResponseType(
+                    status=False,
+                    message=f"An enquiry with email {email} already exists."
+                )
 
-            # Create the company
-            user = Enquiry(
+            # Step 3: Create the enquiry object
+            enquiry = Enquiry(
                 business_name=business_name,
                 website_link=website_link,
                 first_name=first_name,
@@ -48,23 +60,30 @@ class EnquiryMutation:
                 is_approved=False
             )
 
-            # Add and commit
-            db.add(user)
+            # Step 4: Add and commit the new enquiry
+            db.add(enquiry)
             await db.commit()
-            await db.refresh(user)
+            await db.refresh(enquiry)
 
-            # Return response
-            return EnquiryResponseType(
+            # Step 5: Return status response
+            return EnquiryResponseType(               
                 status=True,
-                message="Account Created Successfully.Please Log In"
+                message="Enquiry created successfully. Please wait for approval."
             )
-        except ValidationError as ve:
-            raise ve
+
         except SQLAlchemyError as sae:
+            # Rollback in case of DB error
             await db.rollback()
-            raise Exception("Database error occurred while submitting the enquiry.") from sae
+            return EnquiryResponseType(
+                status=False,
+                message="Database error occurred while submitting the enquiry."
+            )
+        
         except Exception as e:
-            raise Exception("An unexpected error occurred while submitting the enquiry.") from e
+            return EnquiryResponseType(
+                status=False,
+                message="An unexpected error occurred while submitting the enquiry."
+            )
     
     @strawberry.mutation
     async def update_enquiry(
@@ -80,116 +99,223 @@ class EnquiryMutation:
         is_approved: Optional[bool] = None,
     ) -> EnquiryResponseType:
         db: AsyncSession = info.context["db"]
-        authorization_header = info.context['authorization'] # or another method to get headers
-        is_authenticated=await check_authentication(authorization_header)
-        if is_authenticated:
-            try:
-                # Fetch the existing company
-                enquiry = await db.get(Enquiry, id)
-                if not enquiry:
-                    raise Exception(f"Enquiry with ID {id} not found.")
-                
-                # Validate at least one field is being updated
-                if not any([business_name, website_link, first_name, last_name, email, phone_number]):
-                    raise Exception("At least one field must be provided for update.")
+        authorization_header = info.context['authorization']  # Replace with your authentication method
 
-                # Update fields
-                if business_name is not None:
-                    enquiry.business_name = business_name
-                if website_link is not None:
-                    enquiry.website_link = website_link
-                if first_name is not None:
-                    enquiry.first_name = first_name
-                if last_name is not None:
-                    enquiry.last_name = last_name
-                if email is not None:
-                    enquiry.email = email
-                if phone_number is not None:
-                    enquiry.phone_number = phone_number
-                if is_approved is not None:
-                    enquiry.is_approved = is_approved
+        # Step 1: Check authentication
+        is_authenticated = await check_authentication(authorization_header)
+        if not is_authenticated:
+            return EnquiryResponseType(
+                status=False,
+                message="Unauthorized access. Please log in."
+            )
 
-                # Commit updates
-                await db.commit()
-                await db.refresh(enquiry)
-
+        try:
+            # Step 2: Fetch the enquiry record by ID
+            enquiry = await db.get(Enquiry, id)
+            if not enquiry:
                 return EnquiryResponseType(
-                    success=True,
-                    message="Account Updated Successfully"
+                    status=False,
+                    message=f"Enquiry with ID {id} not found."
                 )
-            except Exception as e:
-                await db.rollback()
-                raise Exception(f"An error occurred while updating the enquiry: {e}") from e
 
+            # Step 3: Validate that at least one field is provided for update
+            if not any([business_name, website_link, first_name, last_name, email, phone_number, is_approved]):
+                return EnquiryResponseType(
+                    status=False,
+                    message="At least one field must be provided for update."
+                )
+
+            # Step 4: Validate specific fields
+            if email is not None:
+                if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+                    return EnquiryResponseType(
+                        status=False,
+                        message="Invalid email format."
+                    )
+
+            if phone_number is not None:
+                if not re.match(r"^\d{10}$", phone_number):
+                    return EnquiryResponseType(
+                        status=False,
+                        message="Invalid phone number format. It should contain 10 digits."
+                    )
+
+            # Step 5: Update the enquiry fields
+            if business_name is not None:
+                enquiry.business_name = business_name
+            if website_link is not None:
+                enquiry.website_link = website_link
+            if first_name is not None:
+                enquiry.first_name = first_name
+            if last_name is not None:
+                enquiry.last_name = last_name
+            if email is not None:
+                enquiry.email = email
+            if phone_number is not None:
+                enquiry.phone_number = phone_number
+            if is_approved is not None:
+                enquiry.is_approved = is_approved
+
+            # Step 6: Commit updates
+            await db.commit()
+            await db.refresh(enquiry)
+
+            # Step 7: Return status response
+            return EnquiryResponseType(
+                status=True,
+                message="Enquiry updated successfully."
+            )
+
+        except SQLAlchemyError as sae:
+            # Rollback changes in case of a database error
+            await db.rollback()
+            return EnquiryResponseType(
+                status=False,
+                message="Database error occurred while updating the enquiry."
+            )
+
+        except Exception as e:
+            # Rollback changes in case of unexpected errors
+            await db.rollback()
+            return EnquiryResponseType(
+                status=False,
+                message=f"An unexpected error occurred: {str(e)}"
+            )
     @strawberry.mutation
-    async def delete_enquiry(self, id: int, info) -> str:
-        db: AsyncSession = info.context["db"]
-        authorization_header = info.context['authorization'] # or another method to get headers
-        is_authenticated=await check_authentication(authorization_header)
-        if is_authenticated:
-            try:
-                # Fetch the company
-                enquiry = await db.get(Enquiry, id)
-                if not enquiry:
-                    raise Exception(f"Enquiry with ID {id} not found.")
+    async def delete_enquiry(
+        self, 
+        id: int, 
+        info
+    ) -> EnquiryResponseType:
+        db: AsyncSession = info.context["db"]  # Access database session
+        authorization_header = info.context["authorization"]  # Access authorization header
 
-                # Delete the company
-                await db.delete(enquiry)
-                await db.commit()
+        # Step 1: Check authentication
+        is_authenticated = await check_authentication(authorization_header)
+        if not is_authenticated:
+            return EnquiryResponseType(
+                status=False,
+                message="Unauthorized request. Please provide valid credentials."
+            )
 
-                return f"Enquiry with ID {id} has been successfully deleted."
-            except Exception as e:
-                await db.rollback()
-                raise Exception(f"An error occurred while deleting the enquiry: {e}") from e
+        try:
+            # Step 2: Fetch the enquiry by ID
+            enquiry = await db.get(Enquiry, id)
+            if not enquiry:
+                return EnquiryResponseType(
+                    status=False,
+                    message=f"Enquiry with ID {id} not found."
+                )
+
+            # Step 3: Delete the enquiry
+            await db.delete(enquiry)
+            await db.commit()
+
+            # Step 4: Return status response
+            return EnquiryResponseType(
+                status=True,
+                message=f"Enquiry with ID {id} has been successfully deleted."
+            )
+
+        except SQLAlchemyError as sae:
+            # Rollback changes in case of database errors
+            await db.rollback()
+            return EnquiryResponseType(
+                status=False,
+                message="Database error occurred while deleting the enquiry."
+            )
+
+        except Exception as e:
+            # Rollback changes for any unexpected errors
+            await db.rollback()
+            return EnquiryResponseType(
+                status=False,
+                message=f"An unexpected error occurred: {str(e)}"
+            )
     
     @strawberry.mutation
-    async def approveEnquiry(self, id: int, info) -> str:
+    async def approveEnquiry(self, id: int, info) -> EnquiryResponseType:
         db: AsyncSession = info.context["db"]
-        authorization_header = info.context['authorization'] # or another method to get headers
-        is_authenticated=await check_authentication(authorization_header)
-        if is_authenticated:
+        authorization_header = info.context["authorization"]  # Retrieve authorization header
+
+        # Step 1: Check authentication
+        is_authenticated = await check_authentication(authorization_header)
+        if not is_authenticated:
+            return EnquiryResponseType(
+                status=False,
+                message="Unauthorized access. Please log in."
+            )
+
+        try:
+            # Step 2: Fetch the Enquiry by ID
+            enquiry = await db.get(Enquiry, id)
+            if not enquiry:
+                return EnquiryResponseType(
+                    status=False,
+                    message=f"No enquiry found with ID {id}."
+                )
+
+            # Step 3: Check if it's already approved
+            if enquiry.is_approved:
+                return EnquiryResponseType(
+                    status=False,
+                    message=f"Enquiry with ID {id} is already approved."
+                )
+
+            # Step 4: Approve the enquiry
+            enquiry.is_approved = True
+            await db.commit()  # Save approval in the database
+            await db.refresh(enquiry)
+
+            # Step 5: Create a company for the approved enquiry
             try:
-                # Fetch the Enquiry by ID
-                enquiry = await db.get(Enquiry, id)
-                if not enquiry:
-                    raise ValidationError(f"No enquiry found with ID {id}.")
+                company_payload = {
+                    "db": db,
+                    "business_name": enquiry.business_name,
+                    "website_link": enquiry.website_link,
+                    "first_name": enquiry.first_name,
+                    "last_name": enquiry.last_name,
+                    "email": enquiry.email,
+                    "phone_number": enquiry.phone_number,
+                }
+                # Assuming `createCompany` is a callable function
+                company_response = await createCompany(**company_payload)
 
-                # Check if it's already approved
-                if enquiry.is_approved:
-                    raise ValidationError(f"Enquiry with ID {id} is already approved.")
+                # Check if the company was successfully created
+                if getattr(company_response, "id", None):  # Ensure company creation returned an ID
+                    return EnquiryResponseType(
+                        status=True,
+                        message=f"Enquiry with ID {id} approved and company created successfully."
+                    )
+                else:
+                    raise Exception("Error while creating the company. Approval reverted.")
 
-                # Update the status to approved
-                enquiry.is_approved = True
-                await db.commit()
-                await db.refresh(enquiry)
-
-                # Call the createCompany API
-                try:
-                    company_payload = {
-                        "db": db,
-                        "business_name": enquiry.business_name,
-                        "website_link": enquiry.website_link,
-                        "first_name": enquiry.first_name,
-                        "last_name": enquiry.last_name,
-                        "email": enquiry.email,
-                        "phone_number": enquiry.phone_number,
-                    }
-                    # Assuming createCompany is another Strawberry mutation or service function
-                    company_response = await createCompany(**company_payload)
-                    if company_response.id:  # Check if the company id exists to confirm success
-                        return f"Enquiry with ID {id} approved and company created successfully."
-                    else:
-                        raise Exception("Error while creating the company. Approval reverted.")
-
-                except Exception as e:
-                    # Rollback the approval if company creation fails
-                    enquiry.is_approved = False
-                    await db.commit()
-                    raise Exception("Error while creating the company. Approval reverted.") from e
-            except ValidationError as ve:
-                raise ve
-            except SQLAlchemyError as sae:
-                await db.rollback()
-                raise Exception("Database error occurred while approving the enquiry.") from sae
             except Exception as e:
-                raise Exception("An unexpected error occurred while processing the approval and company creation.") from e
+                # Rollback the approval if company creation fails
+                enquiry.is_approved = False
+                await db.commit()
+                return EnquiryResponseType(
+                    status=False,
+                    message=f"An error occurred while creating the company: {str(e)}. Approval reverted."
+                )
+
+        except ValidationError as ve:
+            return EnquiryResponseType(
+                status=False,
+                message=str(ve)
+            )
+
+        except SQLAlchemyError as sae:
+            await db.rollback()
+            return EnquiryResponseType(
+                status=False,
+                message="Database error occurred while approving the enquiry."
+            )
+
+        except Exception as e:
+            await db.rollback()
+            return EnquiryResponseType(
+                status=False,
+                message=f"An unexpected error occurred: {str(e)}"
+            )
+
