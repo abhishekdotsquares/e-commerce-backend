@@ -24,7 +24,7 @@ class User(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     uuid = Column(String(36), default=lambda: str(uuid4()), unique=True, nullable=False)
-    email = Column(Unicode(255), nullable=False, unique=True)
+    email = Column(String(255), nullable=False, unique=True)
     password = Column(Unicode(255), nullable=False)
     is_superuser = Column(Boolean,default=False, nullable=False)
 

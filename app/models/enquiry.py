@@ -1,16 +1,12 @@
 from uuid import uuid4
-
-from sqlalchemy import Column, Integer, String, Unicode, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Unicode, DateTime,Boolean
 from core.database import Base
 from core.database.mixins import TimestampMixin
 from sqlalchemy import func
 
 
-
-class Company(Base,TimestampMixin):
-    __tablename__ = 'companies'
+class Enquiry(Base,TimestampMixin):
+    __tablename__ = 'enquiries'
   
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     uuid = Column(String(36), default=lambda: str(uuid4()), unique=True, nullable=False) 
@@ -20,12 +16,9 @@ class Company(Base,TimestampMixin):
     last_name = Column(String(100), nullable=False)  
     email = Column(String(255), nullable=False, unique=True)  
     phone_number = Column(String(20), nullable=True)  
+    is_approved = Column(Boolean,default=False, nullable=False)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)  
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)  
     deleted_at = Column(DateTime, nullable=True) 
-
-    # Relationship with subscriptions
-    subscription_plans = relationship("CompanyPlanAssociations", back_populates="company")
-
 
     __mapper_args__ = {"eager_defaults": True}

@@ -6,5 +6,5 @@ __all__ = [
     "SQLAlchemyMiddleware",
     "ResponseLoggerMiddleware",
     "AuthenticationMiddleware",
-    "AuthBackend",
+    # "AuthBackend",
 ]

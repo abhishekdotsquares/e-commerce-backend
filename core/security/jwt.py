@@ -2,8 +2,9 @@ from datetime import datetime, timedelta
 
 from jose import ExpiredSignatureError, JWTError, jwt
 
-from core.config import config
+# from core.config import config
 from core.exceptions import CustomException
+import os 
 
 
 class JWTDecodeError(CustomException):
@@ -17,13 +18,13 @@ class JWTExpiredError(CustomException):
 
 
 class JWTHandler:
-    secret_key = config.SECRET_KEY
-    algorithm = config.JWT_ALGORITHM
-    expire_minutes = config.JWT_EXPIRE_MINUTES
+    secret_key = os.getenv("SECRET_KEY")
+    algorithm = os.getenv("JWT_ALGORITHM")
+    expire_minutes = os.getenv("JWT_EXPIRE_MINUTES")
 
     @staticmethod
     def encode(payload: dict) -> str:
-        expire = datetime.utcnow() + timedelta(minutes=JWTHandler.expire_minutes)
+        expire = datetime.utcnow() + timedelta(minutes=int(JWTHandler.expire_minutes))
         payload.update({"exp": expire})
         return jwt.encode(
             payload, JWTHandler.secret_key, algorithm=JWTHandler.algorithm

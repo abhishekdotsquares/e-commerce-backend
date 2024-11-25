@@ -17,6 +17,11 @@ class ForgotPasswordResponseType:
     success: bool
     message: str
     
+@strawberry.type
+class EnquiryResponseType:
+    # id: strawberry.ID.
+    status: bool
+    message: str
     
 
 
