@@ -18,17 +18,8 @@ class ForgotPasswordResponseType:
     message: str
     
     
-@strawberry.type
-class CompanyResponseType:
-    # id: strawberry.ID.
-    id: int
-    business_name: str
-    website_link: str
-    first_name: str
-    last_name: str
-    email: str
-    phone_number: str
-    
+
+
 @strawberry.type
 class UserResponseType:
     # id: strawberry.ID.
@@ -43,12 +34,24 @@ class SubscriptionPlansResponseType:
     name: str
     description: Optional[str] = None
     price: float
-    durationDays: int
+    duration_days: int
     currency: Optional[str] = "USD"
     features: Optional[str] = None
-    isActive: bool = True
-    trialDays: int = 0
+    is_active: bool = True
+    trial_days: int = 0
 
+@strawberry.type
+class CompanyResponseType:
+    # id: strawberry.ID.
+    id: int
+    business_name: str
+    website_link: str
+    first_name: str
+    last_name: str
+    email: str
+    phone_number: str
+    subscription_plans: list[SubscriptionPlansResponseType]
+    
 @strawberry.type
 class CompanySubscribedPlansResponse:
     id: int

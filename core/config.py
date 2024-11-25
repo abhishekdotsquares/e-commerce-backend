@@ -1,9 +1,9 @@
 class Config:
     # Database
-    NEON_DB_HOST = "postgresql+asyncpg://harmannstudios_owner:OCE4JHxpzl8h@ep-square-dew-a5ke67mm.us-east-2.aws.neon.tech/harmannstudios"
-    neon_db_url = "postgresql+asyncpg://harmannstudios_owner:OCE4JHxpzl8h@ep-square-dew-a5ke67mm.us-east-2.aws.neon.tech/harmannstudios"
+    NEON_DB_HOST = "postgresql+asyncpg://harmannstudios_owner:OCE4JHxpzl8h@ep-square-dew-a5ke67mm.us-east-2.aws.neon.tech/dev_harmannstudios"
+    neon_db_url = "postgresql+asyncpg://harmannstudios_owner:OCE4JHxpzl8h@ep-square-dew-a5ke67mm.us-east-2.aws.neon.tech/dev_harmannstudios"
     NEON_DB_PORT = 5432
-    NEON_DB_NAME = "harmannstudios"
+    NEON_DB_NAME = "dev_harmannstudios"
     NEON_DB_USER = "abhishek.tripathi@dotsquares.com"
     NEON_DB_PASSWORD = "aBHItRI@22"
     NEON_DB_SSL = True

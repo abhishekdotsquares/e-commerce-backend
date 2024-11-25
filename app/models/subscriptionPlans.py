@@ -18,7 +18,7 @@ class SubscriptionPlans(Base,TimestampMixin):
     price = Column(Float, nullable=False)
     duration_days = Column(Integer, nullable=False)  # E.g., 30 for monthly, 365 for yearly
     currency = Column(String(10), nullable=False, default="USD")
-    features = Column(JSON, nullable=True)  # Optional: JSON to store features
+    features = Column(JSON, nullable=True)  
     trial_days = Column(Integer, nullable=True, default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)  
@@ -26,6 +26,8 @@ class SubscriptionPlans(Base,TimestampMixin):
     deleted_at = Column(DateTime, nullable=True) 
 
     # Relationship with subscriptions
-    subscriptions = relationship("companyPlanAssociations", back_populates="plan")
+    company_plan_associations = relationship("CompanyPlanAssociations", back_populates="plan")
+
+
     __mapper_args__ = {"eager_defaults": True}
 

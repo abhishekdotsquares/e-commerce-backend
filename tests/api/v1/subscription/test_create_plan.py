@@ -1,53 +1,53 @@
 import pytest
-from httpx import AsyncClient
-import os
+from unittest.mock import AsyncMock
+from sqlalchemy.exc import SQLAlchemyError
+from unittest.mock import AsyncMock, MagicMock
 
-from tests.factory.plans import create_fake_plan
-
+from api.v1.subscription_plans.Mutation.mutation import PlanMutation
+from app.models.subscriptionPlans import SubscriptionPlans
+from app.schemas.responses.types import SubscriptionPlansResponseType
 
 @pytest.mark.asyncio
-async def test_create_plan(client: AsyncClient) -> None:
-    """Test plan creation."""
-    fake_plan = create_fake_plan()
-    # Define the GraphQL mutation
-    mutation = f"""
-    mutation {{
-        createPlan(
-            id: {fake_plan['id']},
-            name: "{fake_plan['name']}",
-            description: "{fake_plan['description']}",
-            price: {fake_plan['price']},
-            durationDays: {fake_plan['durationDays']},
-            currency: "{fake_plan['currency']}",
-            features: "{fake_plan['features']}",
-            isActive: {str(fake_plan['isActive']).lower()},
-            trialDays: {fake_plan['trialDays']}
-        ) {{
-            id
-            name
-            price
-            durationDays
-            currency
-            features
-            isActive
-            trialDays
-        }}
-    }}
-    """
+async def test_create_plan_success():
+    # Arrange
+    db_mock = AsyncMock()
+    db_mock.get.return_value = None  # Simulate no existing plan
+    db_mock.add.return_value = None
+    db_mock.commit.return_value = None
+    db_mock.refresh.return_value = None
 
-    # Send the GraphQL request
-    BASE_URL = os.getenv("TEST_BASE_URL", "http://0.0.0.0:5010")
+    # Mock GraphQLResolveInfo
+    mock_info = MagicMock()
+    mock_info.context = {"db": db_mock}  # Add mock database to the context
 
-    response = await client.post(f"{BASE_URL}/graphql", json={"query": mutation})
-    # Assert the response
-    assert response.status_code == 200
-    data = response.json()
-    # Verify that the response data matches the input fake_plan
-    assert data["data"]["createPlan"]["id"] == fake_plan["id"]
-    assert data["data"]["createPlan"]["name"] == fake_plan["name"]
-    assert data["data"]["createPlan"]["price"] == fake_plan["price"]
-    assert data["data"]["createPlan"]["duration_days"] == fake_plan["durationDays"]
-    assert data["data"]["createPlan"]["currency"] == fake_plan["currency"]
-    assert data["data"]["createPlan"]["features"] == fake_plan["features"]
-    assert data["data"]["createPlan"]["is_active"] == fake_plan["isActive"]
-    assert data["data"]["createPlan"]["trial_days"] == fake_plan["trialDays"]
+    plan_mutation = PlanMutation()
+
+    # Act
+    response = await plan_mutation.createPlan(
+        id=1,
+        name="Basic Plan",
+        description="A basic subscription plan.",
+        price=10.99,
+        durationDays=30,
+        currency="USD",
+        features="Basic Features",
+        isActive=True,
+        trialDays=7,
+        info=mock_info,  # Pass the mocked info
+    )
+
+    # Assert
+    assert response == SubscriptionPlansResponseType(
+        id=1,
+        name="Basic Plan",
+        description="A basic subscription plan.",
+        price=10.99,
+        duration_days=30,
+        currency="USD",
+        features="Basic Features",
+        is_active=True,
+        trial_days=7,
+    )
+    db_mock.add.assert_called_once()
+    db_mock.commit.assert_called_once()
+    db_mock.refresh.assert_called_once()

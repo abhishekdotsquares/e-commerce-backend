@@ -6,7 +6,7 @@ from core.database import Base
 from sqlalchemy import func
 
 
-class companyPlanAssociations(Base):
+class CompanyPlanAssociations(Base):
     __tablename__ = "company_subscribed_plans"
 
     # Primary key
@@ -26,8 +26,8 @@ class companyPlanAssociations(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)  
     deleted_at = Column(DateTime, nullable=True) 
     # Relationship with other tables (optional)
-    company = relationship("Company", back_populates="subscriptions")
-    plan = relationship("SubscriptionPlans", back_populates="subscriptions")
+    company = relationship("Company", back_populates="subscription_plans")
+    plan = relationship("SubscriptionPlans", back_populates="company_plan_associations")
 
     __mapper_args__ = {"eager_defaults": True}
 

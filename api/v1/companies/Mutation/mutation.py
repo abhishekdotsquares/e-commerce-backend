@@ -4,10 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.responses.types import CompanyResponseType
 from app.schemas.responses.types import CompanySubscribedPlansResponse
 from app.models.company import Company
-from app.models.companyPlanAssociations import companyPlanAssociations
+from app.models.subscriptionPlans import SubscriptionPlans
+from app.models.companyPlanAssociations import CompanyPlanAssociations
 from core.exceptions.validation_error import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Optional
+from core.utils.email import send_email
 
 
 @strawberry.type
@@ -157,33 +159,65 @@ class CompanyMutation:
         self,
         company_id: int,
         plan_id: int,
-        start_date: str,
-        end_date: str,
         is_active: bool,
         info
     ) -> CompanySubscribedPlansResponse:
-        # Get the database session from the context
-        db: AsyncSession = info.context['db']
-        
-        # Convert date strings to datetime objects
-        start_date = datetime.now()
+        """
+        Creates a company subscription plan and sends an email notification.
 
-        end_date = start_date + timedelta(days=15)
+        Args:
+            company_id (int): ID of the company subscribing to the plan.
+            plan_id (int): ID of the subscription plan.
+            is_active (bool): Whether the subscription is active.
+            info: GraphQL context containing the database session.
 
-        # Create the new subscription plan
-        new_plan = companyPlanAssociations(
-            company_id=company_id,
-            plan_id=plan_id,
-            start_date=start_date,
-            end_date=end_date,
-            is_active=is_active
-        )
+        Returns:
+            CompanySubscribedPlansResponse: Response containing subscription details.
+        """
+        db: AsyncSession = info.context["db"]
 
         try:
-            # Add to the session and commit to the database
+            # Calculate start and end dates
+            start_date = datetime.now()
+            end_date = start_date + timedelta(days=15)
+
+            # Create the subscription plan record
+            new_plan = companyPlanAssociations(
+                company_id=company_id,
+                plan_id=plan_id,
+                start_date=start_date,
+                end_date=end_date,
+                is_active=is_active,
+            )
+
+            # Add and commit the new plan to the database
             db.add(new_plan)
             await db.commit()
             await db.refresh(new_plan)
+
+            # Fetch plan details
+            plan_details = await db.get(SubscriptionPlans, plan_id)
+            # Fetch company details
+            company_details = await db.get(Company, company_id)
+            if company_details and company_details.email:
+                # Compose and send the email
+                email_body = f"""
+                <p>Dear {company_details.business_name or company_details.email},</p>
+                
+                <p>We are pleased to confirm your subscription to our {plan_details.name} plan. Your subscription will be effective immediately, and you are entitled to a 15-day trial period, starting from {start_date}, to explore the full benefits of the plan.</p>
+
+                <p>Should you have any questions or require assistance during your trial period, please do not hesitate to contact our support team at support.harmannn@harman.com or visit our support portal.</p>
+
+                <p>We look forward to serving your business and supporting your continued growth.</p>
+
+                <p>Best regards,<br>
+                The Harmann Studios Team</p>
+                """
+                await send_email(
+                    to_email=company_details.email,
+                    subject="Subscription Plan Confirmation",
+                    body=email_body,
+                )
 
             # Return the response object
             return CompanySubscribedPlansResponse(
@@ -192,9 +226,9 @@ class CompanyMutation:
                 plan_id=new_plan.plan_id,
                 start_date=new_plan.start_date,
                 end_date=new_plan.end_date,
-                is_active=new_plan.is_active
+                is_active=new_plan.is_active,
             )
-
         except Exception as e:
+            # Rollback in case of any errors
             await db.rollback()
             raise Exception(f"Error creating subscription plan: {str(e)}")

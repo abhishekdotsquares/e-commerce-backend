@@ -25,6 +25,7 @@ class Company(Base,TimestampMixin):
     deleted_at = Column(DateTime, nullable=True) 
 
     # Relationship with subscriptions
-    subscriptions = relationship("companyPlanAssociations", back_populates="company")
+    subscription_plans = relationship("CompanyPlanAssociations", back_populates="company")
+
 
     __mapper_args__ = {"eager_defaults": True}
