@@ -18,6 +18,28 @@ class ForgotPasswordResponseType:
     status: bool
     message: str
     
+
+
+@strawberry.type
+class UserResponseType:
+    # id: strawberry.ID.
+    id: int
+    email: str
+    password: str
+    is_superuser: bool
+
+@strawberry.type
+class SubscriptionPlansResponseType:
+    id: int
+    name: str
+    description: Optional[str] = None
+    price: float
+    duration_days: int
+    currency: Optional[str] = "USD"
+    features: Optional[str] = None
+    is_active: bool = True
+    trial_days: int = 0
+
 @strawberry.type
 class EnquiryResponseType:
     status: bool
@@ -80,3 +102,12 @@ class CommonResponseType:
     status: bool
     message: str
     data: Optional[JSON] = None
+    
+@strawberry.type
+class CompanySubscribedPlansResponse:
+    id: int
+    company_id: int
+    plan_id: int
+    start_date: datetime
+    end_date: datetime
+    is_active: bool

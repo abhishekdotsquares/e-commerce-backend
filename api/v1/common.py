@@ -5,13 +5,14 @@ from api.v1.enquiry.Mutation.mutation import EnquiryMutation
 from api.v1.enquiry.Query.query import EnquiryQuery
 from api.v1.users.Mutation.mutation import UserMutation
 
+from api.v1.subscription_plans.Query.query import PlanQuery
+from api.v1.subscription_plans.Mutation.mutation import PlanMutation
 
-@strawberry.type
-class Query(CompanyQuery,EnquiryQuery):
+class Query(CompanyQuery,EnquiryQuery,PlanQuery):
     pass 
 
 @strawberry.type
-class Mutation(CompanyMutation, UserMutation,EnquiryMutation):
+class Mutation(CompanyMutation, UserMutation,EnquiryMutation,PlanMutation):
     pass 
 # Define the GraphQL Schema
 schema = strawberry.Schema(query=Query, mutation=Mutation)

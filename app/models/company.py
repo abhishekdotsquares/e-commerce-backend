@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from sqlalchemy import Column, Integer, String, Unicode, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-
+from sqlalchemy.orm import relationship
 from core.database import Base
 from core.database.mixins import TimestampMixin
 from sqlalchemy import func
@@ -23,5 +23,9 @@ class Company(Base,TimestampMixin):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)  
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)  
     deleted_at = Column(DateTime, nullable=True) 
+
+    # Relationship with subscriptions
+    subscription_plans = relationship("CompanyPlanAssociations", back_populates="company")
+
 
     __mapper_args__ = {"eager_defaults": True}
