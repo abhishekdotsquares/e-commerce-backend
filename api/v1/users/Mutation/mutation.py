@@ -1,20 +1,17 @@
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 import strawberry
+from api.v1.response_utils import build_response
 from app.models.passwordResetToken import PasswordResetToken
 from app.models.user import User
-from app.schemas.requests.request_types import UserRequestType
-from app.schemas.responses.response_types import ForgotPasswordResponseType, LoginResponseType, UserResponseType,TokenType
+from app.schemas.responses.response_types import CommonResponseType, ForgotPasswordResponseType, LoginResponseType, UserResponseType,TokenType
 from core.exceptions import BadRequestException
-from core.exceptions.validation_error import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
 from core.security.jwt import JWTHandler
 from core.utils.email import send_email
-from core.security.token_auth import create_access_token
-from sqlalchemy.orm import selectinload
 import re
 
 
@@ -29,23 +26,27 @@ class UserMutation:
         password: str,
         is_superuser: bool,
         info,
-    ) -> UserResponseType:
+    ) -> CommonResponseType:
         db: AsyncSession = info.context['db']
 
         try:
             # Validate inputs
             if not email or not password or is_superuser is None:
-                return UserResponseType(
-                    status="error",
+                return build_response(
+                    response_type=CommonResponseType,
                     message="All fields are required.",
+                    status=False,
+                    data=None
                 )
             
             # Check if the user already exists
             result = await db.execute(select(User).where(User.email == email))
             if result.raw.rowcount > 0:
-                return UserResponseType(
-                    status="error",
+                return build_response(
+                    response_type=CommonResponseType,
                     message=f"User with email {email} already exists.",
+                    status=False,
+                    data=None
                 )
 
             # Hash the password
@@ -61,25 +62,26 @@ class UserMutation:
             db.add(new_user)
             await db.commit()
             await db.refresh(new_user)
-
-            # Return status response
-            return UserResponseType(
-                status="status",
+            return build_response(
+                response_type=CommonResponseType,
                 message="User created successfully.",
-                id=new_user.id,
-                email=new_user.email,
-                is_superuser=new_user.is_superuser,
+                status=True,
+                data=None
             )
         except SQLAlchemyError as sae:
             await db.rollback()
-            return UserResponseType(
-                status="error",
+            return build_response(
+                response_type=CommonResponseType,
                 message="Database error occurred while creating the user.",
+                status=False,
+                data=None
             )
         except Exception as e:
-            return UserResponseType(
-                status="error",
+            return build_response(
+                response_type=CommonResponseType,
                 message="An unexpected error occurred while creating the user.",
+                status=False,
+                data=None
             )
 
     @strawberry.mutation
@@ -88,7 +90,7 @@ class UserMutation:
         email: str,
         password: str,
         info,
-    ) -> LoginResponseType:
+    ) -> CommonResponseType:
         db: AsyncSession = info.context['db']
         
         try:
@@ -98,52 +100,52 @@ class UserMutation:
             )
 
             if not user:
-                return LoginResponseType(
-                    status=False,
+                return build_response(
+                    response_type=CommonResponseType,
                     message="Invalid email or password.",
-                    access_token=None,
-                    refresh_token=None
+                    status=False,
+                    data=None
                 )
-
             # Verify the password
             if not pwd_context.verify(password, user.password):
-                return LoginResponseType(
-                    status=False,
+                return build_response(
+                    response_type=CommonResponseType,
                     message="Invalid email or password.",
-                    access_token=None,
-                    refresh_token=None
+                    status=False,
+                    data=None
                 )
 
             access_token = JWTHandler.encode(payload={"user_id": user.id}),
             refresh_token = JWTHandler.encode(payload={"sub": "refresh_token"}),
-
-            return LoginResponseType(
-                status=True,
-                message="Login statusful.",
-                access_token=access_token[0],
-                refresh_token=refresh_token[0],
-            )
-
+            return build_response(
+                    response_type=CommonResponseType,
+                    message="Login Successfully",
+                    status=True,
+                    data={
+                    "access_token":access_token[0],
+                    "refresh_token":refresh_token[0],
+                    }
+                )
         except BadRequestException as e:
-            return LoginResponseType(
-                status=False,
+            return build_response(
+                response_type=CommonResponseType,
                 message=str(e),
-                access_token=None,
-                refresh_token=None
+                status=False,
+                data=None
             )
         except SQLAlchemyError as sae:
-            return LoginResponseType(
-                status=False,
+            return build_response(
+                response_type=CommonResponseType,
                 message="Database error occurred while logging in.",
-                access_token=None,
-                refresh_token=None
+                status=False,
+                data=None
             )
         except Exception as e:
-            return LoginResponseType(
-                status=False,
+            return build_response(
+                response_type=CommonResponseType,
                 message="An unexpected error occurred while logging in.",
-                access_token=None,
-                refresh_token=None
+                status=False,
+                data=None
             )
 
     @strawberry.mutation
@@ -151,41 +153,30 @@ class UserMutation:
         self,
         email: str,
         info,
-    ) -> ForgotPasswordResponseType:
+    ) -> CommonResponseType:
         db: AsyncSession = info.context['db']
 
         try:
             # Validate email format
             if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-                return ForgotPasswordResponseType(
+                return build_response(
+                    response_type=CommonResponseType,
+                    message="Invalid email format.",
                     status=False,
-                    message="Invalid email format."
+                    data=None
                 )
-
             # Fetch the user by email
             async with db.begin():  # Ensure a properly scoped transaction
                 user = await db.scalar(select(User).where(User.email == email))
 
             if not user:
                 # Avoid revealing email validity for security
-                return ForgotPasswordResponseType(
+                return build_response(
+                    response_type=CommonResponseType,
+                    message="Email doesn't exists.Please Sign Up.",
                     status=False,
-                    message="Email doesn't exists.Please Sign Up."
+                    data=None
                 )
-
-            # # Check if the user has made a recent password reset request (Optional - Throttling)
-            # recent_reset = await db.scalar(
-            #     select(PasswordResetToken)
-            #     .where(PasswordResetToken.user_id == user.id)
-            #     .where(PasswordResetToken.expires_at > datetime.now(timezone.utc))
-            #     .order_by(PasswordResetToken.expires_at.desc())
-            # )
-
-            # if recent_reset:
-            #     return ForgotPasswordResponseType(
-            #         status=False,
-            #         message="A password reset link was already sent recently. Please try again later."
-            #     )
 
             # Generate reset token
             reset_token = str(uuid4())
@@ -215,25 +206,29 @@ class UserMutation:
                 subject="Password Reset Request",
                 body=email_body,
             )
-
-            # Respond to user
-            return ForgotPasswordResponseType(
+            return build_response(
+                response_type=CommonResponseType,
+                message="Reset Password link sent successfully.",
                 status=True,
-                message="Reset Password link sent successfully."
+                data=None
             )
-
         except SQLAlchemyError as sae:
             # Handle any database-related errors
-            return ForgotPasswordResponseType(
+            return build_response(
+                response_type=CommonResponseType,
+                message="Database error occurred while processing your request.",
                 status=False,
-                message="Database error occurred while processing your request."
+                data=None
             )
         except Exception as e:
             # Handle unexpected errors
-            return ForgotPasswordResponseType(
+            return build_response(
+                response_type=CommonResponseType,
+                message="An unexpected error occurred while processing the forgot password request.",
                 status=False,
-                message="An unexpected error occurred while processing the forgot password request."
+                data=None
             )
+
     
     @strawberry.mutation
     async def resetPassword(
@@ -241,7 +236,7 @@ class UserMutation:
         token: str,
         new_password: str,
         info,
-    ) -> ForgotPasswordResponseType:
+    ) -> CommonResponseType:
         db: AsyncSession = info.context['db']
 
         try:
@@ -252,51 +247,64 @@ class UserMutation:
                 )
 
             if not reset_entry:
-                return ForgotPasswordResponseType(
+                return build_response(
+                    response_type=CommonResponseType,
+                    message="Invalid or expired token.",
                     status=False,
-                    message="Invalid or expired token."
+                    data=None
                 )
 
             # Step 3: Check if the token is expired
             if reset_entry.expires_at < datetime.now(timezone.utc):
-                return ForgotPasswordResponseType(
+                return build_response(
+                    response_type=CommonResponseType,
+                    message="The reset token has expired. Please request a new one.",
                     status=False,
-                    message="The reset token has expired. Please request a new one."
+                    data=None
                 )
-
             # Step 4: Fetch the associated user
             async with db.begin():
                 user = await db.get(User, reset_entry.user_id)
 
             if not user:
-                return ForgotPasswordResponseType(
+                return build_response(
+                    response_type=CommonResponseType,
+                    message="User associated with the reset token not found.",
                     status=False,
-                    message="User associated with the reset token not found."
+                    data=None
                 )
 
             # Step 5: Validate the new password (for example, minimum length and complexity)
             if len(new_password) < 8:
-                return ForgotPasswordResponseType(
+                return build_response(
+                    response_type=CommonResponseType,
+                    message="Password must be at least 8 characters long.",
                     status=False,
-                    message="Password must be at least 8 characters long."
+                    data=None
                 )
-            
+                
             if not re.search(r"[A-Z]", new_password):  # At least one uppercase letter
-                return ForgotPasswordResponseType(
+                return build_response(
+                    response_type=CommonResponseType,
+                    message="Password must contain at least one uppercase letter.",
                     status=False,
-                    message="Password must contain at least one uppercase letter."
+                    data=None
                 )
 
             if not re.search(r"[a-z]", new_password):  # At least one lowercase letter
-                return ForgotPasswordResponseType(
+                return build_response(
+                    response_type=CommonResponseType,
+                    message="Password must contain at least one lowercase letter.",
                     status=False,
-                    message="Password must contain at least one lowercase letter."
+                    data=None
                 )
 
             if not re.search(r"[0-9]", new_password):  # At least one digit
-                return ForgotPasswordResponseType(
+                return build_response(
+                    response_type=CommonResponseType,
+                    message="Password must contain at least one digit.",
                     status=False,
-                    message="Password must contain at least one digit."
+                    data=None
                 )
 
             # Step 6: Hash the new password
@@ -309,21 +317,26 @@ class UserMutation:
                 # Invalidate the reset token by deleting it
                 await db.delete(reset_entry)
                 await db.commit()
-
-            return ForgotPasswordResponseType(
+            return build_response(
+                response_type=CommonResponseType,
+                message="Password has been reset successfully. You can now log in with your new password.",
                 status=True,
-                message="Password has been reset successfully. You can now log in with your new password."
+                data=None
             )
 
         except SQLAlchemyError as sae:
             # Handle any database-related errors
-            return ForgotPasswordResponseType(
+            return build_response(
+                response_type=CommonResponseType,
+                message="Database error occurred while resetting your password.",
                 status=False,
-                message="Database error occurred while resetting your password."
+                data=None
             )
         except Exception as e:
             # Handle unexpected errors
-            return ForgotPasswordResponseType(
+            return build_response(
+                response_type=CommonResponseType,
+                message="An unexpected error occurred while resetting the password.",
                 status=False,
-                message="An unexpected error occurred while resetting the password."
+                data=None
             )

@@ -5,6 +5,7 @@ from datetime import datetime
 import graphene
 # from graphene import Field, ObjectType, Mutation, String, UUID
 import strawberry
+from strawberry.scalars import JSON  # Import the JSON scalar
 
 @strawberry.type
 class TokenType:
@@ -41,6 +42,7 @@ class CompanyResponseType:
     last_name: Optional[str] = None
     email: Optional[str] = None
     phone_number: Optional[str] = None
+    data: Optional[JSON] = None
    
 @strawberry.type
 class CompaniesListResponseType:
@@ -68,6 +70,13 @@ class UserResponseType:
 class LoginResponseType:
     status: bool
     message: str
+    data: Optional[JSON] = None
+
     access_token: Optional[str] = None  # Make access_token nullable
     refresh_token: Optional[str] = None  # Make refresh_token nullable
-
+    
+@strawberry.type
+class CommonResponseType:
+    status: bool
+    message: str
+    data: Optional[JSON] = None

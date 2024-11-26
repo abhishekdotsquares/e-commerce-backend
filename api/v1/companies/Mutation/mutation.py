@@ -2,8 +2,7 @@ from sqlalchemy import select
 import strawberry
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.v1.check_auth import check_authentication
-from api.v1.companies.utils.createCompany import createCompany
-from app.schemas.requests.request_types import CompanyRequestType
+from api.v1.response_utils import build_response
 from app.schemas.responses.response_types import CompanyResponseType
 from app.models.company import Company
 from core.exceptions.validation_error import ValidationError
@@ -23,43 +22,48 @@ class CompanyMutation:
         email: str,
         phone_number: str,
         info
-    ) -> CompanyResponseType:  # Adjust response type to include `status` and `message`
+    ) -> CompanyResponseType:  
         db: AsyncSession = info.context["db"]
-        authorization_header = info.context["authorization"]  # Retrieve authorization header
+        authorization_header = info.context["authorization"]  
 
         # Step 1: Check Authentication
         is_authenticated = await check_authentication(authorization_header)
         if not is_authenticated:
-            return CompanyResponseType(
+            return build_response(
+                response_type=CompanyResponseType,
+                message="Unauthorized access. Please log in.",
                 status=False,
-                message="Unauthorized access. Please log in."
+                data=None
             )
 
         try:
             # Step 2: Validate Inputs
             if not business_name or not first_name or not last_name or not email or not phone_number:
-                return CompanyResponseType(
+                return build_response(
+                    response_type=CompanyResponseType,
+                    message="All fields (business_name, first_name, last_name, email, phone_number) are required.",
                     status=False,
-                    message="All fields (business_name, first_name, last_name, email, phone_number) are required."
+                    data=None
                 )
 
             # Validate email format
             if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-                return CompanyResponseType(
+                return build_response(
+                    response_type=CompanyResponseType,
+                    message="Invalid email format.",
                     status=False,
-                    message="Invalid email format."
+                    data=None
                 )
                 
-            # Validate phone number format (assuming a utility function exists)
-
             # Step 3: Check if a company with the given email already exists
             result = await db.execute(select(Company).where(Company.email == email))
             if result.raw.rowcount > 0:
-                return CompanyResponseType(
+                return build_response(
+                    response_type=CompanyResponseType,
+                    message=f"A company with email {email} already exists.",
                     status=False,
-                    message=f"A company with email {email} already exists."
+                    data=None
                 )
-            
             # Step 4: Create the Company
             company = Company(
                 business_name=business_name,
@@ -69,7 +73,6 @@ class CompanyMutation:
                 email=email,
                 phone_number=phone_number
             )
-            print("🐍 File: Mutation/mutation.py | Line: 74 | CompanyMutation: ~ company",company)
 
             # Add and commit to the database
             db.add(company)
@@ -77,33 +80,38 @@ class CompanyMutation:
             await db.refresh(company)
 
             # Step 5: Return status Response
-            return CompanyResponseType(
-                status=True,
+            return build_response(
+                response_type=CompanyResponseType,
                 message="Company created successfully.",
-                # company_id=company.id  # Include ID in response if available
+                status=True,
+                data=None
             )
-
         except ValidationError as ve:
             # Step 6: Validation Error Handling
-            return CompanyResponseType(
-                status=False,
-                message=str(ve)
+            return build_response(
+                response_type=CompanyResponseType,
+                message=str(ve),
+                status=False,  # Ensure status is False in case of validation error
+                data=None
             )
-
         except SQLAlchemyError as sae:
             # Step 7: Handle Database Errors
             await db.rollback()
-            return CompanyResponseType(
+            return build_response(
+                response_type=CompanyResponseType,
+                message="A database error occurred while creating the company.",
                 status=False,
-                message="A database error occurred while creating the company."
+                data=None
             )
 
         except Exception as e:
             # Step 8: Handle Unexpected Errors
             await db.rollback()
-            return CompanyResponseType(
+            return build_response(
+                response_type=CompanyResponseType,
+                message=f"An unexpected error occurred: {str(e)}",
                 status=False,
-                message=f"An unexpected error occurred: {str(e)}"
+                data=None
             )
 
     @strawberry.mutation
@@ -119,7 +127,7 @@ class CompanyMutation:
         phone_number: Optional[str] = None,
     ) -> CompanyResponseType:
         db: AsyncSession = info.context["db"]
-        authorization_header = info.context['authorization']  # Extract authorization token
+        authorization_header = info.context['authorization']
         is_authenticated = await check_authentication(authorization_header)
 
         if is_authenticated:
@@ -127,23 +135,29 @@ class CompanyMutation:
                 # Fetch the existing company
                 company = await db.get(Company, id)
                 if not company:
-                    return CompanyResponseType(
+                    return build_response(
+                        response_type=CompanyResponseType,
+                        message=f"Company with ID {id} not found.",
                         status=False,
-                        message=f"Company with ID {id} not found."
+                        data=None
                     )
 
                 # Validate at least one field is being updated
                 if not any([business_name, website_link, first_name, last_name, email, phone_number]):
-                    return CompanyResponseType(
+                    return build_response(
+                        response_type=CompanyResponseType,
+                        message="At least one field must be provided for update.",
                         status=False,
-                        message="At least one field must be provided for update."
+                        data=None
                     )
 
                 # Validate email format if it's being updated
                 if email is not None and not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-                    return CompanyResponseType(
+                    return build_response(
+                        response_type=CompanyResponseType,
+                        message="Invalid email format.",
                         status=False,
-                        message="Invalid email format."
+                        data=None
                     )
 
                 # Update fields
@@ -164,34 +178,41 @@ class CompanyMutation:
                 await db.commit()
                 await db.refresh(company)
 
-                return CompanyResponseType(
+                return build_response(
+                    response_type=CompanyResponseType,
+                    message="Company details updated successfully.",
                     status=True,
-                    message="Company details updated successfully."
+                    data=None
                 )
             except SQLAlchemyError as sae:
                 await db.rollback()
-                return CompanyResponseType(
+                return build_response(
+                    response_type=CompanyResponseType,
+                    message="A database error occurred while updating the company.",
                     status=False,
-                    message="A database error occurred while updating the company."
+                    data=None
                 )
             except Exception as e:
                 await db.rollback()
-                return CompanyResponseType(
+                return build_response(
+                    response_type=CompanyResponseType,
+                    message=f"An unexpected error occurred: {e}",
                     status=False,
-                    message=f"An unexpected error occurred: {e}"
+                    data=None
                 )
         else:
-            return CompanyResponseType(
+            return build_response(
+                response_type=CompanyResponseType,
+                message="Unauthorized access. Please log in.",
                 status=False,
-                message="Unauthorized access. Please log in."
+                data=None
             )
-
 
 
     @strawberry.mutation
     async def delete_company(self, id: int, info) -> CompanyResponseType:
         db: AsyncSession = info.context["db"]
-        authorization_header = info.context['authorization']  # Extract authorization token
+        authorization_header = info.context['authorization']  
         is_authenticated = await check_authentication(authorization_header)
 
         if is_authenticated:
@@ -199,33 +220,43 @@ class CompanyMutation:
                 # Fetch the company to be deleted
                 company = await db.get(Company, id)
                 if not company:
-                    return CompanyResponseType(
+                    return build_response(
+                        response_type=CompanyResponseType,
+                        message=f"Company with ID {id} not found.",
                         status=False,
-                        message=f"Company with ID {id} not found."
+                        data=None
                     )
 
                 # Delete the company
                 await db.delete(company)
                 await db.commit()
 
-                return CompanyResponseType(
+                return build_response(
+                    response_type=CompanyResponseType,
+                    message=f"Company with ID {id} has been successfully deleted.",
                     status=True,
-                    message=f"Company with ID {id} has been successfully deleted."
+                    data=None
                 )
             except SQLAlchemyError as sae:
                 await db.rollback()
-                return CompanyResponseType(
+                return build_response(
+                    response_type=CompanyResponseType,
+                    message="A database error occurred while deleting the company.",
                     status=False,
-                    message="A database error occurred while deleting the company."
+                    data=None
                 )
             except Exception as e:
                 await db.rollback()
-                return CompanyResponseType(
+                return build_response(
+                    response_type=CompanyResponseType,
+                    message=f"An unexpected error occurred: {e}",
                     status=False,
-                    message=f"An unexpected error occurred: {e}"
+                    data=None
                 )
         else:
-            return CompanyResponseType(
+            return build_response(
+                response_type=CompanyResponseType,
+                message="Unauthorized access. Please log in.",
                 status=False,
-                message="Unauthorized access. Please log in."
+                data=None
             )
